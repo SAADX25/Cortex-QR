@@ -3,58 +3,22 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         xmlns:local="clr-namespace:CortexQR.Views"
-        Title="Cortex QR" Height="680" Width="860"
-        MinWidth="760" MinHeight="580"
+        Title="Cortex QR" Height="740" Width="1060"
+        MinWidth="900" MinHeight="620"
         WindowStartupLocation="CenterScreen"
         WindowStyle="None"
         AllowsTransparency="True"
-        ResizeMode="CanResizeWithGrip"
+        ResizeMode="CanResize"
         Background="Transparent"
-        TextElement.Foreground="#E0E0E0"
-        TextElement.FontFamily="{materialDesign:MaterialDesignFont}"
+        TextElement.Foreground="{StaticResource TextPrimaryBrush}"
+        FontFamily="{materialDesign:MaterialDesignFont}"
         FontSize="14">
 
-    <Window.Resources>
-        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    <!-- Root border creates the rounded window shape -->
+    <Border Background="{StaticResource SurfaceBrush}"
+            CornerRadius="10"
+            ClipToBounds="True">
 
-        <Style x:Key="ColorLabelStyle" TargetType="TextBlock">
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="Foreground" Value="{DynamicResource MaterialDesignBodyLight}"/>
-            <Setter Property="FontSize" Value="12"/>
-        </Style>
-
-        <Style x:Key="ChromeButtonStyle" TargetType="Button">
-            <Setter Property="Width" Value="34"/>
-            <Setter Property="Height" Value="30"/>
-            <Setter Property="Padding" Value="0"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#D7D7D7"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="ChromeButtonBorder"
-                                Background="{TemplateBinding Background}"
-                                CornerRadius="6">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ChromeButtonBorder" Property="Background" Value="#2DFFFFFF"/>
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="ChromeButtonBorder" Property="Background" Value="#45FFFFFF"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-    </Window.Resources>
-
-    <Border Background="#121212">
         <materialDesign:DialogHost Identifier="RootDialog"
                                    CloseOnClickAway="True"
                                    DialogMargin="24">
@@ -64,641 +28,888 @@
 
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="52"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
+                <!-- ══════════════════════════════════════════════════
+                     ROW 0 — Custom title bar / chrome
+                ══════════════════════════════════════════════════ -->
                 <Border x:Name="HeaderBar"
                         Grid.Row="0"
-                        Background="#1E1E1E"
-                        Padding="24,12"
+                        Background="{StaticResource Surface1Brush}"
                         MouseLeftButtonDown="HeaderBar_MouseLeftButtonDown">
-                    <Grid>
+                    <!-- Bottom divider line -->
+                    <Border.BorderBrush>
+                        <SolidColorBrush Color="#2A2A3A"/>
+                    </Border.BorderBrush>
+                    <Border.BorderThickness>0,0,0,1</Border.BorderThickness>
+
+                    <Grid Margin="20,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <Border Grid.Column="0"
-                                Width="36" Height="36"
-                                CornerRadius="8"
-                                Background="{DynamicResource PrimaryHueMidBrush}"
-                                Margin="0,0,14,0">
-                            <materialDesign:PackIcon Kind="QrCode"
-                                                     Width="22" Height="22"
-                                                     HorizontalAlignment="Center"
-                                                     VerticalAlignment="Center"
-                                                     Foreground="White"/>
-                        </Border>
-
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                            <TextBlock Text="Cortex QR"
-                                       FontSize="18"
-                                       FontWeight="Bold"
-                                       Foreground="White"/>
-                            <TextBlock Text="Professional QR Code Generator"
-                                       FontSize="11"
-                                       Foreground="#AAFFFFFF"/>
+                        <!-- Logo + App Name -->
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Border Width="34" Height="34" CornerRadius="8" Margin="0,0,12,0">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                        <GradientStop Color="#7C6AF7" Offset="0"/>
+                                        <GradientStop Color="#5548C8" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                                <materialDesign:PackIcon Kind="QrCode"
+                                                         Width="20" Height="20"
+                                                         HorizontalAlignment="Center"
+                                                         VerticalAlignment="Center"
+                                                         Foreground="White"/>
+                            </Border>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="CORTEX QR"
+                                           FontSize="14"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource TextPrimaryBrush}"/>
+                                <TextBlock Text="Professional QR Studio"
+                                           FontSize="11"
+                                           Foreground="{StaticResource TextMutedBrush}"/>
+                            </StackPanel>
                         </StackPanel>
 
+                        <!-- Window Chrome Buttons -->
                         <StackPanel Grid.Column="2"
                                     Orientation="Horizontal"
-                                    VerticalAlignment="Top"
-                                    Margin="16,0,0,0">
+                                    VerticalAlignment="Center">
                             <Button x:Name="MinimizeButton"
                                     Style="{StaticResource ChromeButtonStyle}"
                                     ToolTip="Minimize"
                                     Click="MinimizeButton_Click">
-                                <materialDesign:PackIcon Kind="WindowMinimize"
-                                                         Width="16" Height="16"/>
+                                <materialDesign:PackIcon Kind="WindowMinimize" Width="16" Height="16"/>
+                            </Button>
+                            <Button x:Name="MaximizeButton"
+                                    Style="{StaticResource ChromeButtonStyle}"
+                                    ToolTip="Maximize"
+                                    Margin="2,0,0,0"
+                                    Click="MaximizeButton_Click">
+                                <materialDesign:PackIcon Kind="WindowMaximize" Width="16" Height="16"/>
                             </Button>
                             <Button x:Name="CloseButton"
-                                    Style="{StaticResource ChromeButtonStyle}"
+                                    Style="{StaticResource CloseButtonStyle}"
                                     ToolTip="Close"
+                                    Margin="2,0,0,0"
                                     Click="CloseButton_Click">
-                                <materialDesign:PackIcon Kind="Close"
-                                                         Width="16" Height="16"/>
+                                <materialDesign:PackIcon Kind="Close" Width="16" Height="16"/>
                             </Button>
                         </StackPanel>
                     </Grid>
                 </Border>
 
-                <Grid Grid.Row="1" Margin="20">
+                <!-- ══════════════════════════════════════════════════
+                     ROW 1 — Sidebar + Content area
+                ══════════════════════════════════════════════════ -->
+                <Grid Grid.Row="1">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="360" MinWidth="300"/>
-                        <ColumnDefinition Width="16"/>
+                        <ColumnDefinition Width="220"/>
+                        <ColumnDefinition Width="1"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
-                    <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
-                        <StackPanel>
+                    <!-- ── SIDEBAR ──────────────────────────────────── -->
+                    <Border Grid.Column="0"
+                            Background="{StaticResource Surface1Brush}">
+                        <DockPanel>
+                            <!-- Version label docked at the bottom -->
+                            <TextBlock DockPanel.Dock="Bottom"
+                                       Text="Cortex QR · v1.0"
+                                       FontSize="10"
+                                       Foreground="{StaticResource TextMutedBrush}"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,0,0,16"/>
 
-                            <materialDesign:Card Style="{StaticResource CardStyle}">
-                                <StackPanel>
-                                    <TextBlock Text="QR CONTENT"
-                                               FontSize="11"
-                                               FontWeight="Bold"
-                                               Foreground="{DynamicResource PrimaryHueMidBrush}"
-                                               Margin="0,0,0,14"/>
-
-                                    <TabControl x:Name="PayloadTabControl"
-                                                SelectionChanged="SettingChanged">
-                                        <TabItem Header="Text / URL">
-                                            <TextBox x:Name="DataTextBox"
-                                                     materialDesign:HintAssist.Hint="Enter URL or text..."
-                                                     materialDesign:HintAssist.IsFloating="True"
-                                                     Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                                                     AcceptsReturn="False"
-                                                     MaxLines="1"
-                                                     FontSize="14"
-                                                     Margin="0,16,0,0"
-                                                     TextChanged="SettingChanged"/>
-                                        </TabItem>
-
-                                        <TabItem Header="Wi-Fi">
-                                            <StackPanel Margin="0,16,0,0">
-                                                <TextBox x:Name="WifiSsidTextBox"
-                                                         materialDesign:HintAssist.Hint="SSID"
-                                                         materialDesign:HintAssist.IsFloating="True"
-                                                         Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                                                         FontSize="14"
-                                                         Margin="0,0,0,12"
-                                                         TextChanged="SettingChanged"/>
-
-                                                <PasswordBox x:Name="WifiPasswordBox"
-                                                             materialDesign:HintAssist.Hint="Password"
-                                                             materialDesign:HintAssist.IsFloating="True"
-                                                             Style="{StaticResource MaterialDesignOutlinedPasswordBox}"
-                                                             FontSize="14"
-                                                             Margin="0,0,0,12"
-                                                             PasswordChanged="SettingChanged"/>
-
-                                                <Grid Margin="0,0,0,12">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="Auto"/>
-                                                        <ColumnDefinition Width="*"/>
-                                                    </Grid.ColumnDefinitions>
-                                                    <TextBlock Grid.Column="0"
-                                                               Text="Security"
-                                                               Style="{StaticResource ColorLabelStyle}"
-                                                               Width="86"/>
-                                                    <ComboBox x:Name="WifiAuthComboBox"
-                                                              Grid.Column="1"
-                                                              SelectedIndex="1"
-                                                              Style="{StaticResource MaterialDesignOutlinedComboBox}"
-                                                              SelectionChanged="SettingChanged">
-                                                        <ComboBoxItem Content="WEP"/>
-                                                        <ComboBoxItem Content="WPA"/>
-                                                        <ComboBoxItem Content="WPA2"/>
-                                                        <ComboBoxItem Content="No Password"/>
-                                                    </ComboBox>
-                                                </Grid>
-
-                                                <CheckBox x:Name="WifiHiddenCheckBox"
-                                                          Content="Hidden network"
-                                                          Style="{StaticResource MaterialDesignCheckBox}"
-                                                          Checked="SettingChanged"
-                                                          Unchecked="SettingChanged"/>
-                                            </StackPanel>
-                                        </TabItem>
-
-                                        <TabItem Header="vCard">
-                                            <StackPanel Margin="0,16,0,0">
-                                                <TextBox x:Name="VCardFullNameTextBox"
-                                                         materialDesign:HintAssist.Hint="Full Name"
-                                                         materialDesign:HintAssist.IsFloating="True"
-                                                         Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                                                         FontSize="14"
-                                                         Margin="0,0,0,12"
-                                                         TextChanged="SettingChanged"/>
-
-                                                <TextBox x:Name="VCardPhoneTextBox"
-                                                         materialDesign:HintAssist.Hint="Phone"
-                                                         materialDesign:HintAssist.IsFloating="True"
-                                                         Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                                                         FontSize="14"
-                                                         Margin="0,0,0,12"
-                                                         TextChanged="SettingChanged"/>
-
-                                                <TextBox x:Name="VCardEmailTextBox"
-                                                         materialDesign:HintAssist.Hint="Email"
-                                                         materialDesign:HintAssist.IsFloating="True"
-                                                         Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                                                         FontSize="14"
-                                                         Margin="0,0,0,12"
-                                                         TextChanged="SettingChanged"/>
-
-                                                <TextBox x:Name="VCardCompanyTextBox"
-                                                         materialDesign:HintAssist.Hint="Company"
-                                                         materialDesign:HintAssist.IsFloating="True"
-                                                         Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                                                         FontSize="14"
-                                                         TextChanged="SettingChanged"/>
-                                            </StackPanel>
-                                        </TabItem>
-                                    </TabControl>
+                            <!-- Navigation -->
+                            <StackPanel Margin="0,24,0,0">
+                                <!-- Sidebar branding mark -->
+                                <StackPanel Orientation="Horizontal" Margin="20,0,0,24">
+                                    <Border Width="8" Height="8" CornerRadius="4"
+                                            Margin="0,0,8,0" VerticalAlignment="Center">
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                <GradientStop Color="#7C6AF7" Offset="0"/>
+                                                <GradientStop Color="#5548C8" Offset="1"/>
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                    </Border>
+                                    <TextBlock Text="WORKSPACE"
+                                               FontSize="10"
+                                               FontWeight="SemiBold"
+                                               Foreground="{StaticResource TextMutedBrush}"
+                                               VerticalAlignment="Center"/>
                                 </StackPanel>
-                            </materialDesign:Card>
 
-                            <materialDesign:Card Style="{StaticResource CardStyle}">
-                                <StackPanel>
-                                    <TextBlock Text="LOGO"
-                                               FontSize="11"
-                                               FontWeight="Bold"
-                                               Foreground="{DynamicResource PrimaryHueMidBrush}"
-                                               Margin="0,0,0,14"/>
+                                <!-- Generator nav button -->
+                                <RadioButton x:Name="GeneratorNavButton"
+                                             GroupName="SideNav"
+                                             IsChecked="True"
+                                             Tag="Generator"
+                                             Style="{StaticResource SidebarNavButtonStyle}"
+                                             Checked="NavButton_Checked">
+                                    <StackPanel Orientation="Horizontal">
+                                        <materialDesign:PackIcon Kind="QrCode"
+                                                                 Width="20" Height="20"
+                                                                 VerticalAlignment="Center"
+                                                                 Margin="0,0,12,0"/>
+                                        <TextBlock Text="Generator" VerticalAlignment="Center" FontSize="13"/>
+                                    </StackPanel>
+                                </RadioButton>
 
-                                    <Grid Margin="0,0,0,16">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBox x:Name="LogoPathTextBox"
-                                                 Grid.Column="0"
-                                                 materialDesign:HintAssist.Hint="No logo selected"
-                                                 materialDesign:HintAssist.IsFloating="True"
-                                                 Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                                                 IsReadOnly="True"
-                                                 FontSize="12"
-                                                 Foreground="{DynamicResource MaterialDesignBodyLight}"
-                                                 TextChanged="SettingChanged"/>
-                                        <Button x:Name="BrowseButton"
-                                                Grid.Column="1"
-                                                Content="BROWSE"
-                                                Margin="10,0,0,0"
-                                                Style="{StaticResource MaterialDesignOutlinedButton}"
-                                                Padding="14,0"
-                                                Height="40"
-                                                Click="BrowseButton_Click"
-                                                Cursor="Hand"/>
-                                    </Grid>
+                                <!-- Batch nav button -->
+                                <RadioButton x:Name="BatchNavButton"
+                                             GroupName="SideNav"
+                                             Tag="Batch"
+                                             Style="{StaticResource SidebarNavButtonStyle}"
+                                             Checked="NavButton_Checked">
+                                    <StackPanel Orientation="Horizontal">
+                                        <materialDesign:PackIcon Kind="FileMultiple"
+                                                                 Width="20" Height="20"
+                                                                 VerticalAlignment="Center"
+                                                                 Margin="0,0,12,0"/>
+                                        <TextBlock Text="Batch" VerticalAlignment="Center" FontSize="13"/>
+                                    </StackPanel>
+                                </RadioButton>
 
-                                    <Grid Margin="0,0,0,12">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <Slider x:Name="LogoSizeSlider"
-                                                Grid.Column="0"
-                                                Minimum="10"
-                                                Maximum="35"
-                                                Value="15"
-                                                IsSnapToTickEnabled="True"
-                                                TickFrequency="1"
-                                                Style="{StaticResource MaterialDesignSlider}"
-                                                VerticalAlignment="Center"
-                                                ValueChanged="SettingChanged"/>
-                                        <Border Grid.Column="1"
-                                                Margin="10,0,0,0"
-                                                Background="{DynamicResource PrimaryHueLightBrush}"
-                                                CornerRadius="12"
-                                                Padding="8,2"
-                                                MinWidth="44">
-                                            <TextBlock Text="{Binding Value, ElementName=LogoSizeSlider, StringFormat={}{0:0}%}"
-                                                       FontSize="12"
-                                                       FontWeight="SemiBold"
-                                                       HorizontalAlignment="Center"
-                                                       Foreground="{DynamicResource PrimaryHueLightForegroundBrush}"/>
-                                        </Border>
-                                    </Grid>
+                                <!-- Presets nav button -->
+                                <RadioButton x:Name="PresetsNavButton"
+                                             GroupName="SideNav"
+                                             Tag="Presets"
+                                             Style="{StaticResource SidebarNavButtonStyle}"
+                                             Checked="NavButton_Checked">
+                                    <StackPanel Orientation="Horizontal">
+                                        <materialDesign:PackIcon Kind="Star"
+                                                                 Width="20" Height="20"
+                                                                 VerticalAlignment="Center"
+                                                                 Margin="0,0,12,0"/>
+                                        <TextBlock Text="Presets" VerticalAlignment="Center" FontSize="13"/>
+                                    </StackPanel>
+                                </RadioButton>
 
-                                    <CheckBox x:Name="LogoBackgroundCheckBox"
-                                              Content="Add background padding behind logo"
-                                              IsChecked="True"
-                                              Style="{StaticResource MaterialDesignCheckBox}"
-                                              Checked="SettingChanged"
-                                              Unchecked="SettingChanged"/>
-                                </StackPanel>
-                            </materialDesign:Card>
+                                <!-- Separator -->
+                                <Border Height="1"
+                                        Background="{StaticResource BorderSubtleBrush}"
+                                        Margin="20,20"/>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
 
-                            <materialDesign:Card Style="{StaticResource CardStyle}">
-                                <StackPanel>
-                                    <Grid Margin="0,0,0,16">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0"
-                                                   Text="STYLING"
-                                                   FontSize="11"
-                                                   FontWeight="Bold"
-                                                   Foreground="{DynamicResource PrimaryHueMidBrush}"
-                                                   VerticalAlignment="Center"/>
-                                        <Button x:Name="ResetButton"
-                                                Grid.Column="1"
-                                                Height="30"
-                                                Padding="8,0"
-                                                Style="{StaticResource MaterialDesignFlatButton}"
-                                                Foreground="{DynamicResource PrimaryHueLightBrush}"
-                                                ToolTip="Restore defaults"
-                                                Click="ResetButton_Click"
-                                                Cursor="Hand">
-                                            <StackPanel Orientation="Horizontal">
-                                                <materialDesign:PackIcon Kind="Refresh"
-                                                                         Width="16" Height="16"
-                                                                         VerticalAlignment="Center"
-                                                                         Margin="0,0,6,0"/>
-                                                <TextBlock Text="Reset"
-                                                           FontSize="12"
-                                                           FontWeight="SemiBold"
-                                                           VerticalAlignment="Center"/>
-                                            </StackPanel>
-                                        </Button>
-                                    </Grid>
+                    <!-- Sidebar / content divider -->
+                    <Border Grid.Column="1" Background="{StaticResource BorderSubtleBrush}"/>
 
-                                    <local:ColorRow x:Name="FgColorRow"
-                                                    Label="Foreground"
-                                                    InitialColor="#FF000000"
-                                                    Margin="0,0,0,14"
-                                                    ColorChanged="ColorRow_ColorChanged"/>
-
-                                    <CheckBox x:Name="UseGradientCheckBox"
-                                              Content="Use Gradient"
-                                              Style="{StaticResource MaterialDesignCheckBox}"
-                                              Margin="0,0,0,14"
-                                              Checked="SettingChanged"
-                                              Unchecked="SettingChanged"/>
-
-                                    <local:ColorRow x:Name="FgColor2Row"
-                                                    Label="Foreground 2"
-                                                    InitialColor="#FF3F51B5"
-                                                    Margin="0,0,0,14"
-                                                    Visibility="{Binding IsChecked, ElementName=UseGradientCheckBox, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                                    ColorChanged="ColorRow_ColorChanged"/>
-
-                                    <local:ColorRow x:Name="BgColorRow"
-                                                    Label="Background"
-                                                    InitialColor="#FFFFFFFF"
-                                                    Margin="0,0,0,14"
-                                                    ColorChanged="ColorRow_ColorChanged"/>
-
-                                    <local:ColorRow x:Name="FinderColorRow"
-                                                    Label="Finder Pattern"
-                                                    InitialColor="#FF000000"
-                                                    Margin="0,0,0,14"
-                                                    ColorChanged="ColorRow_ColorChanged"/>
-
-                                    <local:ColorRow x:Name="InnerEyeColorRow"
-                                                    Label="Inner Eye Color"
-                                                    InitialColor="#FF000000"
-                                                    Margin="0,0,0,16"
-                                                    ColorChanged="ColorRow_ColorChanged"/>
-
-                                    <Separator Margin="0,0,0,14"
-                                               Background="{DynamicResource MaterialDesignDivider}"/>
-
-                                    <Grid Margin="0,0,0,14">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0"
-                                                   Text="Eye Shape"
-                                                   Style="{StaticResource ColorLabelStyle}"
-                                                   Width="110"/>
-                                        <ComboBox x:Name="EyeShapeComboBox"
-                                                  Grid.Column="1"
-                                                  SelectedIndex="0"
-                                                  Style="{StaticResource MaterialDesignOutlinedComboBox}"
-                                                  SelectionChanged="SettingChanged">
-                                            <ComboBoxItem Content="Square"/>
-                                            <ComboBoxItem Content="Rounded"/>
-                                            <ComboBoxItem Content="Circular"/>
-                                            <ComboBoxItem Content="Leaf"/>
-                                            <ComboBoxItem Content="Shield"/>
-                                        </ComboBox>
-                                    </Grid>
-
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0"
-                                                   Text="Module Shape"
-                                                   Style="{StaticResource ColorLabelStyle}"
-                                                   Width="110"/>
-                                        <ComboBox x:Name="ShapeComboBox"
-                                                  Grid.Column="1"
-                                                  SelectedIndex="0"
-                                                  Style="{StaticResource MaterialDesignOutlinedComboBox}"
-                                                  SelectionChanged="SettingChanged">
-                                            <ComboBoxItem Content="Squares"/>
-                                            <ComboBoxItem Content="Rounded Squares"/>
-                                            <ComboBoxItem Content="Dots / Circles"/>
-                                            <ComboBoxItem Content="Liquid"/>
-                                        </ComboBox>
-                                    </Grid>
-                                </StackPanel>
-                            </materialDesign:Card>
-
-                            <materialDesign:Card Style="{StaticResource CardStyle}">
-                                <StackPanel>
-                                    <TextBlock Text="BATCH"
-                                               FontSize="11"
-                                               FontWeight="Bold"
-                                               Foreground="{DynamicResource PrimaryHueMidBrush}"
-                                               Margin="0,0,0,10"/>
-
-                                    <TextBlock Text="CSV columns: data (required), filename (optional)"
-                                               FontSize="11"
-                                               Foreground="{DynamicResource MaterialDesignBodyLight}"
-                                               Margin="0,0,0,12"/>
-
-                                    <Grid Margin="0,0,0,12">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBox x:Name="BatchCsvPathTextBox"
-                                                 Grid.Column="0"
-                                                 materialDesign:HintAssist.Hint="Select CSV file"
-                                                 materialDesign:HintAssist.IsFloating="True"
-                                                 Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                                                 IsReadOnly="True"
-                                                 FontSize="12"
-                                                 Foreground="{DynamicResource MaterialDesignBodyLight}"/>
-                                        <Button x:Name="BatchBrowseCsvButton"
-                                                Grid.Column="1"
-                                                Content="BROWSE"
-                                                Margin="10,0,0,0"
-                                                Style="{StaticResource MaterialDesignOutlinedButton}"
-                                                Padding="14,0"
-                                                Height="40"
-                                                Click="BatchBrowseCsvButton_Click"
-                                                Cursor="Hand"/>
-                                    </Grid>
-
-                                    <Grid Margin="0,0,0,12">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBox x:Name="BatchOutputFolderTextBox"
-                                                 Grid.Column="0"
-                                                 materialDesign:HintAssist.Hint="Output folder"
-                                                 materialDesign:HintAssist.IsFloating="True"
-                                                 Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                                                 IsReadOnly="True"
-                                                 FontSize="12"
-                                                 Foreground="{DynamicResource MaterialDesignBodyLight}"/>
-                                        <Button x:Name="BatchBrowseOutputButton"
-                                                Grid.Column="1"
-                                                Content="BROWSE"
-                                                Margin="10,0,0,0"
-                                                Style="{StaticResource MaterialDesignOutlinedButton}"
-                                                Padding="14,0"
-                                                Height="40"
-                                                Click="BatchBrowseOutputButton_Click"
-                                                Cursor="Hand"/>
-                                    </Grid>
-
-                                    <Grid Margin="0,0,0,12">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0"
-                                                   Text="Format"
-                                                   Style="{StaticResource ColorLabelStyle}"
-                                                   Width="110"/>
-                                        <ComboBox x:Name="BatchOutputFormatComboBox"
-                                                  Grid.Column="1"
-                                                  SelectedIndex="0"
-                                                  Style="{StaticResource MaterialDesignOutlinedComboBox}">
-                                            <ComboBoxItem Content="PNG"/>
-                                            <ComboBoxItem Content="SVG"/>
-                                        </ComboBox>
-                                    </Grid>
-
-                                    <ProgressBar x:Name="BatchProgressBar"
-                                                 Height="8"
-                                                 Minimum="0"
-                                                 Maximum="100"
-                                                 Value="0"
-                                                 Style="{StaticResource MaterialDesignLinearProgressBar}"
-                                                 Margin="0,0,0,8"/>
-
-                                    <TextBlock x:Name="BatchStatusTextBlock"
-                                               Text="Idle"
-                                               FontSize="12"
-                                               Foreground="{DynamicResource MaterialDesignBodyLight}"
-                                               Margin="0,0,0,12"/>
-
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="12"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-
-                                        <Button x:Name="BatchStartButton"
-                                                Grid.Column="0"
-                                                Height="40"
-                                                Style="{StaticResource MaterialDesignRaisedButton}"
-                                                Background="{DynamicResource PrimaryHueMidBrush}"
-                                                Foreground="White"
-                                                FontSize="13"
-                                                FontWeight="SemiBold"
-                                                materialDesign:ButtonAssist.CornerRadius="8"
-                                                Click="BatchStartButton_Click"
-                                                Cursor="Hand">
-                                            Start Batch
-                                        </Button>
-
-                                        <Button x:Name="BatchCancelButton"
-                                                Grid.Column="2"
-                                                Height="40"
-                                                IsEnabled="False"
-                                                Style="{StaticResource MaterialDesignOutlinedButton}"
-                                                Foreground="{DynamicResource PrimaryHueLightBrush}"
-                                                FontSize="13"
-                                                FontWeight="SemiBold"
-                                                materialDesign:ButtonAssist.CornerRadius="8"
-                                                Click="BatchCancelButton_Click"
-                                                Cursor="Hand">
-                                            Cancel
-                                        </Button>
-                                    </Grid>
-                                </StackPanel>
-                            </materialDesign:Card>
-
-                            <materialDesign:Card Style="{StaticResource CardStyle}">
-                                <StackPanel>
-                                    <TextBlock Text="PRESETS"
-                                               FontSize="11"
-                                               FontWeight="Bold"
-                                               Foreground="{DynamicResource PrimaryHueMidBrush}"
-                                               Margin="0,0,0,10"/>
-
-                                    <ComboBox x:Name="PresetComboBox"
-                                              Style="{StaticResource MaterialDesignOutlinedComboBox}"
-                                              materialDesign:HintAssist.Hint="Select a preset"
-                                              DisplayMemberPath="Name"
-                                              SelectionChanged="PresetComboBox_SelectionChanged"
-                                              Margin="0,0,0,12"/>
-
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="12"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-
-                                        <Button x:Name="PresetSaveButton"
-                                                Grid.Column="0"
-                                                Height="40"
-                                                Style="{StaticResource MaterialDesignRaisedButton}"
-                                                Background="{DynamicResource PrimaryHueMidBrush}"
-                                                Foreground="White"
-                                                FontSize="13"
-                                                FontWeight="SemiBold"
-                                                materialDesign:ButtonAssist.CornerRadius="8"
-                                                Click="PresetSaveButton_Click"
-                                                Cursor="Hand">
-                                            Save Preset
-                                        </Button>
-
-                                        <Button x:Name="PresetLoadButton"
-                                                Grid.Column="2"
-                                                Height="40"
-                                                IsEnabled="False"
-                                                Style="{StaticResource MaterialDesignOutlinedButton}"
-                                                Foreground="{DynamicResource PrimaryHueLightBrush}"
-                                                FontSize="13"
-                                                FontWeight="SemiBold"
-                                                materialDesign:ButtonAssist.CornerRadius="8"
-                                                Click="PresetLoadButton_Click"
-                                                Cursor="Hand">
-                                            Load Preset
-                                        </Button>
-                                    </Grid>
-                                </StackPanel>
-                            </materialDesign:Card>
-
-                        </StackPanel>
-                    </ScrollViewer>
-
+                    <!-- ── CONTENT AREA ──────────────────────────────── -->
                     <Grid Grid.Column="2">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="340"/>
+                            <ColumnDefinition Width="1"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
-                        <materialDesign:Card Grid.Row="0"
-                                             UniformCornerRadius="12"
-                                             Background="#FFFFFF"
-                                             Margin="0,0,0,16">
-                            <Grid>
-                                <TextBlock x:Name="EmptyHint"
-                                           Text="Enter content to generate a QR code"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"
-                                           Foreground="{DynamicResource MaterialDesignBodyLight}"
-                                           FontSize="13"
-                                           TextWrapping="Wrap"
-                                           TextAlignment="Center"
-                                           Margin="30"/>
+                        <!-- ── SETTINGS PANEL (left column) ────────── -->
+                        <ScrollViewer Grid.Column="0"
+                                      VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel Margin="20,20,20,20">
 
-                                <Image x:Name="QrCodeImage"
-                                       Stretch="Uniform"
-                                       Margin="24"
-                                       RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                                <!-- ══════════════════════
+                                     GENERATOR PANEL
+                                ══════════════════════ -->
+                                <StackPanel x:Name="GeneratorPanel" Visibility="Visible">
+
+                                    <!-- ── Content Card ── -->
+                                    <Border Background="{StaticResource Surface1Brush}"
+                                            BorderBrush="{StaticResource BorderSubtleBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="12"
+                                            Padding="18,16"
+                                            Margin="0,0,0,12">
+                                        <StackPanel>
+                                            <!-- Section header -->
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                                                <materialDesign:PackIcon Kind="Pencil"
+                                                                         Width="14" Height="14"
+                                                                         Foreground="{StaticResource AccentBrush}"
+                                                                         VerticalAlignment="Center"
+                                                                         Margin="0,0,8,0"/>
+                                                <TextBlock Text="QR CONTENT"
+                                                           Style="{StaticResource SectionLabelStyle}"
+                                                           Margin="0"/>
+                                            </StackPanel>
+
+                                            <!-- Payload type tab control -->
+                                            <TabControl x:Name="PayloadTabControl"
+                                                        Style="{StaticResource PillTabControlStyle}"
+                                                        SelectionChanged="SettingChanged">
+
+                                                <!-- Tab: Text / URL -->
+                                                <TabItem Header="Text / URL">
+                                                    <StackPanel Margin="0,4,0,0">
+                                                        <TextBlock Text="URL or Text Content"
+                                                                   Style="{StaticResource FieldLabelStyle}"/>
+                                                        <TextBox x:Name="DataTextBox"
+                                                                 Style="{StaticResource ModernTextBoxStyle}"
+                                                                 TextChanged="SettingChanged"/>
+                                                    </StackPanel>
+                                                </TabItem>
+
+                                                <!-- Tab: Wi-Fi -->
+                                                <TabItem Header="Wi-Fi">
+                                                    <StackPanel Margin="0,4,0,0">
+                                                        <TextBlock Text="Network Name (SSID)"
+                                                                   Style="{StaticResource FieldLabelStyle}"/>
+                                                        <TextBox x:Name="WifiSsidTextBox"
+                                                                 Style="{StaticResource ModernTextBoxStyle}"
+                                                                 Margin="0,0,0,12"
+                                                                 TextChanged="SettingChanged"/>
+
+                                                        <TextBlock Text="Password"
+                                                                   Style="{StaticResource FieldLabelStyle}"/>
+                                                        <PasswordBox x:Name="WifiPasswordBox"
+                                                                     Style="{StaticResource ModernPasswordBoxStyle}"
+                                                                     Margin="0,0,0,12"
+                                                                     PasswordChanged="SettingChanged"/>
+
+                                                        <TextBlock Text="Security Type"
+                                                                   Style="{StaticResource FieldLabelStyle}"/>
+                                                        <ComboBox x:Name="WifiAuthComboBox"
+                                                                  Style="{StaticResource ModernComboBoxStyle}"
+                                                                  materialDesign:HintAssist.IsFloating="False"
+                                                                  SelectedIndex="1"
+                                                                  Margin="0,0,0,14"
+                                                                  SelectionChanged="SettingChanged">
+                                                            <ComboBoxItem Content="WEP"/>
+                                                            <ComboBoxItem Content="WPA"/>
+                                                            <ComboBoxItem Content="WPA2"/>
+                                                            <ComboBoxItem Content="No Password"/>
+                                                        </ComboBox>
+
+                                                        <CheckBox x:Name="WifiHiddenCheckBox"
+                                                                  Content="Hidden network"
+                                                                  Style="{StaticResource ModernCheckBoxStyle}"
+                                                                  Checked="SettingChanged"
+                                                                  Unchecked="SettingChanged"/>
+                                                    </StackPanel>
+                                                </TabItem>
+
+                                                <!-- Tab: vCard -->
+                                                <TabItem Header="vCard">
+                                                    <StackPanel Margin="0,4,0,0">
+                                                        <TextBlock Text="Full Name"
+                                                                   Style="{StaticResource FieldLabelStyle}"/>
+                                                        <TextBox x:Name="VCardFullNameTextBox"
+                                                                 Style="{StaticResource ModernTextBoxStyle}"
+                                                                 Margin="0,0,0,12"
+                                                                 TextChanged="SettingChanged"/>
+
+                                                        <TextBlock Text="Phone"
+                                                                   Style="{StaticResource FieldLabelStyle}"/>
+                                                        <TextBox x:Name="VCardPhoneTextBox"
+                                                                 Style="{StaticResource ModernTextBoxStyle}"
+                                                                 Margin="0,0,0,12"
+                                                                 TextChanged="SettingChanged"/>
+
+                                                        <TextBlock Text="Email"
+                                                                   Style="{StaticResource FieldLabelStyle}"/>
+                                                        <TextBox x:Name="VCardEmailTextBox"
+                                                                 Style="{StaticResource ModernTextBoxStyle}"
+                                                                 Margin="0,0,0,12"
+                                                                 TextChanged="SettingChanged"/>
+
+                                                        <TextBlock Text="Company"
+                                                                   Style="{StaticResource FieldLabelStyle}"/>
+                                                        <TextBox x:Name="VCardCompanyTextBox"
+                                                                 Style="{StaticResource ModernTextBoxStyle}"
+                                                                 TextChanged="SettingChanged"/>
+                                                    </StackPanel>
+                                                </TabItem>
+                                            </TabControl>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- ── Logo Card ── -->
+                                    <Border Background="{StaticResource Surface1Brush}"
+                                            BorderBrush="{StaticResource BorderSubtleBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="12"
+                                            Padding="18,16"
+                                            Margin="0,0,0,12">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                                                <materialDesign:PackIcon Kind="Image"
+                                                                         Width="14" Height="14"
+                                                                         Foreground="{StaticResource AccentBrush}"
+                                                                         VerticalAlignment="Center"
+                                                                         Margin="0,0,8,0"/>
+                                                <TextBlock Text="LOGO"
+                                                           Style="{StaticResource SectionLabelStyle}"
+                                                           Margin="0"/>
+                                            </StackPanel>
+
+                                            <!-- Logo file picker -->
+                                            <Grid Margin="0,0,0,12">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBox x:Name="LogoPathTextBox"
+                                                         Grid.Column="0"
+                                                         Style="{StaticResource ModernTextBoxStyle}"
+                                                         IsReadOnly="True"
+                                                         TextChanged="SettingChanged"/>
+                                                <Button x:Name="BrowseButton"
+                                                        Grid.Column="1"
+                                                        Style="{StaticResource GhostButtonStyle}"
+                                                        Margin="8,0,0,0"
+                                                        Click="BrowseButton_Click">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <materialDesign:PackIcon Kind="FolderOpen"
+                                                                                 Width="14" Height="14"
+                                                                                 VerticalAlignment="Center"
+                                                                                 Margin="0,0,6,0"/>
+                                                        <TextBlock Text="Browse" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Button>
+                                            </Grid>
+
+                                            <!-- Logo size slider -->
+                                            <TextBlock Text="Logo Size"
+                                                       Style="{StaticResource FieldLabelStyle}"/>
+                                            <Grid Margin="0,0,0,12">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Slider x:Name="LogoSizeSlider"
+                                                        Grid.Column="0"
+                                                        Minimum="10" Maximum="35" Value="15"
+                                                        IsSnapToTickEnabled="True"
+                                                        TickFrequency="1"
+                                                        VerticalAlignment="Center"
+                                                        Style="{StaticResource ModernSliderStyle}"
+                                                        ValueChanged="SettingChanged"/>
+                                                <Border Grid.Column="1"
+                                                        Margin="10,0,0,0"
+                                                        Background="{StaticResource AccentSubtleBrush}"
+                                                        BorderBrush="{StaticResource AccentBrush}"
+                                                        BorderThickness="1"
+                                                        CornerRadius="8"
+                                                        Padding="8,3"
+                                                        MinWidth="46">
+                                                    <TextBlock Text="{Binding Value, ElementName=LogoSizeSlider, StringFormat={}{0:0}%}"
+                                                               FontSize="12"
+                                                               FontWeight="SemiBold"
+                                                               HorizontalAlignment="Center"
+                                                               Foreground="{StaticResource AccentBrush}"/>
+                                                </Border>
+                                            </Grid>
+
+                                            <CheckBox x:Name="LogoBackgroundCheckBox"
+                                                      Content="Add background padding behind logo"
+                                                      Style="{StaticResource ModernCheckBoxStyle}"
+                                                      IsChecked="True"
+                                                      Checked="SettingChanged"
+                                                      Unchecked="SettingChanged"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- ── Styling Card ── -->
+                                    <Border Background="{StaticResource Surface1Brush}"
+                                            BorderBrush="{StaticResource BorderSubtleBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="12"
+                                            Padding="18,16"
+                                            Margin="0,0,0,12">
+                                        <StackPanel>
+                                            <!-- Section header + reset button -->
+                                            <Grid Margin="0,0,0,14">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                                    <materialDesign:PackIcon Kind="Palette"
+                                                                             Width="14" Height="14"
+                                                                             Foreground="{StaticResource AccentBrush}"
+                                                                             VerticalAlignment="Center"
+                                                                             Margin="0,0,8,0"/>
+                                                    <TextBlock Text="STYLING"
+                                                               Style="{StaticResource SectionLabelStyle}"
+                                                               Margin="0"
+                                                               VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                                <Button x:Name="ResetButton"
+                                                        Grid.Column="1"
+                                                        Height="28"
+                                                        Padding="10,0"
+                                                        FontSize="11"
+                                                        Style="{StaticResource GhostButtonStyle}"
+                                                        Click="ResetButton_Click">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <materialDesign:PackIcon Kind="Refresh"
+                                                                                 Width="13" Height="13"
+                                                                                 VerticalAlignment="Center"
+                                                                                 Margin="0,0,5,0"/>
+                                                        <TextBlock Text="Reset" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Button>
+                                            </Grid>
+
+                                            <!-- Color rows -->
+                                            <local:ColorRow x:Name="FgColorRow"
+                                                            Label="Foreground"
+                                                            InitialColor="#FF000000"
+                                                            Margin="0,0,0,12"
+                                                            ColorChanged="ColorRow_ColorChanged"/>
+
+                                            <CheckBox x:Name="UseGradientCheckBox"
+                                                      Content="Use Gradient"
+                                                      Style="{StaticResource ModernCheckBoxStyle}"
+                                                      Margin="0,0,0,12"
+                                                      Checked="SettingChanged"
+                                                      Unchecked="SettingChanged"/>
+
+                                            <local:ColorRow x:Name="FgColor2Row"
+                                                            Label="Foreground 2"
+                                                            InitialColor="#FF3F51B5"
+                                                            Margin="0,0,0,12"
+                                                            Visibility="{Binding IsChecked, ElementName=UseGradientCheckBox, Converter={StaticResource BoolToVisibility}}"
+                                                            ColorChanged="ColorRow_ColorChanged"/>
+
+                                            <local:ColorRow x:Name="BgColorRow"
+                                                            Label="Background"
+                                                            InitialColor="#FFFFFFFF"
+                                                            Margin="0,0,0,12"
+                                                            ColorChanged="ColorRow_ColorChanged"/>
+
+                                            <local:ColorRow x:Name="FinderColorRow"
+                                                            Label="Finder Pattern"
+                                                            InitialColor="#FF000000"
+                                                            Margin="0,0,0,12"
+                                                            ColorChanged="ColorRow_ColorChanged"/>
+
+                                            <local:ColorRow x:Name="InnerEyeColorRow"
+                                                            Label="Inner Eye"
+                                                            InitialColor="#FF000000"
+                                                            Margin="0,0,0,16"
+                                                            ColorChanged="ColorRow_ColorChanged"/>
+
+                                            <!-- Divider -->
+                                            <Border Height="1"
+                                                    Background="{StaticResource BorderSubtleBrush}"
+                                                    Margin="0,0,0,14"/>
+
+                                            <!-- Eye shape picker -->
+                                            <TextBlock Text="Eye Shape"
+                                                       Style="{StaticResource FieldLabelStyle}"/>
+                                            <ComboBox x:Name="EyeShapeComboBox"
+                                                      Style="{StaticResource ModernComboBoxStyle}"
+                                                      materialDesign:HintAssist.IsFloating="False"
+                                                      SelectedIndex="0"
+                                                      Margin="0,0,0,12"
+                                                      SelectionChanged="SettingChanged">
+                                                <ComboBoxItem Content="Square"/>
+                                                <ComboBoxItem Content="Rounded"/>
+                                                <ComboBoxItem Content="Circular"/>
+                                                <ComboBoxItem Content="Leaf"/>
+                                                <ComboBoxItem Content="Shield"/>
+                                            </ComboBox>
+
+                                            <!-- Module shape picker -->
+                                            <TextBlock Text="Module Shape"
+                                                       Style="{StaticResource FieldLabelStyle}"/>
+                                            <ComboBox x:Name="ShapeComboBox"
+                                                      Style="{StaticResource ModernComboBoxStyle}"
+                                                      materialDesign:HintAssist.IsFloating="False"
+                                                      SelectedIndex="0"
+                                                      SelectionChanged="SettingChanged">
+                                                <ComboBoxItem Content="Squares"/>
+                                                <ComboBoxItem Content="Rounded Squares"/>
+                                                <ComboBoxItem Content="Dots / Circles"/>
+                                                <ComboBoxItem Content="Liquid"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                    </Border>
+
+                                </StackPanel><!-- /GeneratorPanel -->
+
+                                <!-- ══════════════════════
+                                     BATCH PANEL
+                                ══════════════════════ -->
+                                <StackPanel x:Name="BatchPanel" Visibility="Collapsed">
+
+                                    <Border Background="{StaticResource Surface1Brush}"
+                                            BorderBrush="{StaticResource BorderSubtleBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="12"
+                                            Padding="18,16"
+                                            Margin="0,0,0,12">
+                                        <StackPanel>
+                                            <!-- Section header -->
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                                                <materialDesign:PackIcon Kind="FileMultiple"
+                                                                         Width="14" Height="14"
+                                                                         Foreground="{StaticResource AccentBrush}"
+                                                                         VerticalAlignment="Center"
+                                                                         Margin="0,0,8,0"/>
+                                                <TextBlock Text="BATCH PROCESSING"
+                                                           Style="{StaticResource SectionLabelStyle}"
+                                                           Margin="0"/>
+                                            </StackPanel>
+
+                                            <!-- Info hint -->
+                                            <Border Background="{StaticResource AccentSubtleBrush}"
+                                                    BorderBrush="{StaticResource AccentBrush}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="8"
+                                                    Padding="12,8"
+                                                    Margin="0,0,0,16">
+                                                <TextBlock Text="CSV format: data (required), filename (optional)"
+                                                           FontSize="11"
+                                                           Foreground="{StaticResource AccentBrush}"
+                                                           TextWrapping="Wrap"/>
+                                            </Border>
+
+                                            <!-- CSV file picker -->
+                                            <TextBlock Text="CSV File"
+                                                       Style="{StaticResource FieldLabelStyle}"/>
+                                            <Grid Margin="0,0,0,12">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBox x:Name="BatchCsvPathTextBox"
+                                                         Grid.Column="0"
+                                                         Style="{StaticResource ModernTextBoxStyle}"
+                                                         IsReadOnly="True"/>
+                                                <Button x:Name="BatchBrowseCsvButton"
+                                                        Grid.Column="1"
+                                                        Style="{StaticResource GhostButtonStyle}"
+                                                        Margin="8,0,0,0"
+                                                        Click="BatchBrowseCsvButton_Click">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <materialDesign:PackIcon Kind="FolderOpen"
+                                                                                 Width="14" Height="14"
+                                                                                 VerticalAlignment="Center"
+                                                                                 Margin="0,0,6,0"/>
+                                                        <TextBlock Text="Browse" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Button>
+                                            </Grid>
+
+                                            <!-- Output folder picker -->
+                                            <TextBlock Text="Output Folder"
+                                                       Style="{StaticResource FieldLabelStyle}"/>
+                                            <Grid Margin="0,0,0,12">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBox x:Name="BatchOutputFolderTextBox"
+                                                         Grid.Column="0"
+                                                         Style="{StaticResource ModernTextBoxStyle}"
+                                                         IsReadOnly="True"/>
+                                                <Button x:Name="BatchBrowseOutputButton"
+                                                        Grid.Column="1"
+                                                        Style="{StaticResource GhostButtonStyle}"
+                                                        Margin="8,0,0,0"
+                                                        Click="BatchBrowseOutputButton_Click">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <materialDesign:PackIcon Kind="FolderOpen"
+                                                                                 Width="14" Height="14"
+                                                                                 VerticalAlignment="Center"
+                                                                                 Margin="0,0,6,0"/>
+                                                        <TextBlock Text="Browse" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Button>
+                                            </Grid>
+
+                                            <!-- Output format -->
+                                            <TextBlock Text="Output Format"
+                                                       Style="{StaticResource FieldLabelStyle}"/>
+                                            <ComboBox x:Name="BatchOutputFormatComboBox"
+                                                      Style="{StaticResource ModernComboBoxStyle}"
+                                                      materialDesign:HintAssist.IsFloating="False"
+                                                      SelectedIndex="0"
+                                                      Margin="0,0,0,16">
+                                                <ComboBoxItem Content="PNG"/>
+                                                <ComboBoxItem Content="SVG"/>
+                                            </ComboBox>
+
+                                            <!-- Divider -->
+                                            <Border Height="1"
+                                                    Background="{StaticResource BorderSubtleBrush}"
+                                                    Margin="0,0,0,14"/>
+
+                                            <!-- Progress -->
+                                            <Grid Margin="0,0,0,8">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="Progress"
+                                                           Style="{StaticResource FieldLabelStyle}"
+                                                           Margin="0"
+                                                           VerticalAlignment="Center"/>
+                                                <TextBlock x:Name="BatchStatusTextBlock"
+                                                           Grid.Column="1"
+                                                           Text="Idle"
+                                                           FontSize="12"
+                                                           Foreground="{StaticResource TextMutedBrush}"
+                                                           VerticalAlignment="Center"/>
+                                            </Grid>
+                                            <ProgressBar x:Name="BatchProgressBar"
+                                                         Style="{StaticResource ModernProgressBarStyle}"
+                                                         Minimum="0" Maximum="100" Value="0"
+                                                         Margin="0,0,0,16"/>
+
+                                            <!-- Start / Cancel buttons -->
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="10"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Button x:Name="BatchStartButton"
+                                                        Grid.Column="0"
+                                                        Style="{StaticResource PrimaryButtonStyle}"
+                                                        Click="BatchStartButton_Click">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <materialDesign:PackIcon Kind="Play"
+                                                                                 Width="16" Height="16"
+                                                                                 VerticalAlignment="Center"
+                                                                                 Margin="0,0,8,0"/>
+                                                        <TextBlock Text="Start Batch"
+                                                                   VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Button>
+                                                <Button x:Name="BatchCancelButton"
+                                                        Grid.Column="2"
+                                                        Style="{StaticResource OutlineButtonStyle}"
+                                                        IsEnabled="False"
+                                                        Click="BatchCancelButton_Click">
+                                                    Cancel
+                                                </Button>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+
+                                </StackPanel><!-- /BatchPanel -->
+
+                                <!-- ══════════════════════
+                                     PRESETS PANEL
+                                ══════════════════════ -->
+                                <StackPanel x:Name="PresetsPanel" Visibility="Collapsed">
+
+                                    <Border Background="{StaticResource Surface1Brush}"
+                                            BorderBrush="{StaticResource BorderSubtleBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="12"
+                                            Padding="18,16"
+                                            Margin="0,0,0,12">
+                                        <StackPanel>
+                                            <!-- Section header -->
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                                                <materialDesign:PackIcon Kind="Star"
+                                                                         Width="14" Height="14"
+                                                                         Foreground="{StaticResource AccentBrush}"
+                                                                         VerticalAlignment="Center"
+                                                                         Margin="0,0,8,0"/>
+                                                <TextBlock Text="STYLE PRESETS"
+                                                           Style="{StaticResource SectionLabelStyle}"
+                                                           Margin="0"/>
+                                            </StackPanel>
+
+                                            <TextBlock Text="Select a saved preset to apply all styling settings at once."
+                                                       FontSize="12"
+                                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                                       TextWrapping="Wrap"
+                                                       Margin="0,0,0,14"/>
+
+                                            <TextBlock Text="Saved Presets"
+                                                       Style="{StaticResource FieldLabelStyle}"/>
+                                            <ComboBox x:Name="PresetComboBox"
+                                                      Style="{StaticResource ModernComboBoxStyle}"
+                                                      DisplayMemberPath="Name"
+                                                      SelectionChanged="PresetComboBox_SelectionChanged"
+                                                      Margin="0,0,0,16"/>
+
+                                            <!-- Divider -->
+                                            <Border Height="1"
+                                                    Background="{StaticResource BorderSubtleBrush}"
+                                                    Margin="0,0,0,14"/>
+
+                                            <!-- Save / Load buttons -->
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="10"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Button x:Name="PresetSaveButton"
+                                                        Grid.Column="0"
+                                                        Style="{StaticResource PrimaryButtonStyle}"
+                                                        Click="PresetSaveButton_Click">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <materialDesign:PackIcon Kind="ContentSave"
+                                                                                 Width="16" Height="16"
+                                                                                 VerticalAlignment="Center"
+                                                                                 Margin="0,0,8,0"/>
+                                                        <TextBlock Text="Save" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Button>
+                                                <Button x:Name="PresetLoadButton"
+                                                        Grid.Column="2"
+                                                        Style="{StaticResource OutlineButtonStyle}"
+                                                        IsEnabled="False"
+                                                        Click="PresetLoadButton_Click">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <materialDesign:PackIcon Kind="Download"
+                                                                                 Width="16" Height="16"
+                                                                                 VerticalAlignment="Center"
+                                                                                 Margin="0,0,8,0"/>
+                                                        <TextBlock Text="Load" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Button>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+
+                                </StackPanel><!-- /PresetsPanel -->
+
+                            </StackPanel>
+                        </ScrollViewer>
+
+                        <!-- Settings / Preview divider -->
+                        <Border Grid.Column="1" Background="{StaticResource BorderSubtleBrush}"/>
+
+                        <!-- ── PREVIEW PANEL (right column) ─────────── -->
+                        <Grid Grid.Column="2" Margin="24">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- QR Preview Card -->
+                            <Border Grid.Row="0"
+                                    Background="{StaticResource Surface1Brush}"
+                                    BorderBrush="{StaticResource BorderSubtleBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="16"
+                                    Margin="0,0,0,16"
+                                    ClipToBounds="True">
+                                <Border.Effect>
+                                    <DropShadowEffect Color="#0A84FF" BlurRadius="40"
+                                                      ShadowDepth="0" Opacity="0.15"/>
+                                </Border.Effect>
+
+                                <Grid>
+                                    <!-- Radial glow behind QR code -->
+                                    <Ellipse HorizontalAlignment="Center"
+                                             VerticalAlignment="Center"
+                                             Width="320" Height="320">
+                                        <Ellipse.Fill>
+                                            <RadialGradientBrush>
+                                                <GradientStop Color="#0D1E38" Offset="0"/>
+                                                <GradientStop Color="Transparent" Offset="1"/>
+                                            </RadialGradientBrush>
+                                        </Ellipse.Fill>
+                                    </Ellipse>
+
+                                    <!-- Empty state hint -->
+                                    <Border x:Name="EmptyHint"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <Border Width="80" Height="80" CornerRadius="20"
+                                                    HorizontalAlignment="Center"
+                                                    Margin="0,0,0,16">
+                                                <Border.Background>
+                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                        <GradientStop Color="#1A1A2E" Offset="0"/>
+                                                        <GradientStop Color="#1D1A40" Offset="1"/>
+                                                    </LinearGradientBrush>
+                                                </Border.Background>
+                                                <materialDesign:PackIcon Kind="QrCode"
+                                                                         Width="44" Height="44"
+                                                                         HorizontalAlignment="Center"
+                                                                         VerticalAlignment="Center"
+                                                                         Foreground="{StaticResource TextMutedBrush}"/>
+                                            </Border>
+                                            <TextBlock Text="Enter content to generate"
+                                                       FontSize="13"
+                                                       Foreground="{StaticResource TextMutedBrush}"
+                                                       HorizontalAlignment="Center"/>
+                                            <TextBlock Text="a QR code"
+                                                       FontSize="13"
+                                                       Foreground="{StaticResource TextMutedBrush}"
+                                                       HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Live QR code image -->
+                                    <Image x:Name="QrCodeImage"
+                                           Stretch="Uniform"
+                                           Margin="36"
+                                           RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Export action buttons -->
+                            <Grid Grid.Row="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Button Grid.Column="0"
+                                        x:Name="SaveButton"
+                                        Height="48"
+                                        IsEnabled="False"
+                                        Style="{StaticResource PrimaryButtonStyle}"
+                                        Click="SaveButton_Click">
+                                    <StackPanel Orientation="Horizontal">
+                                        <materialDesign:PackIcon Kind="ContentSave"
+                                                                 Width="18" Height="18"
+                                                                 VerticalAlignment="Center"
+                                                                 Margin="0,0,10,0"/>
+                                        <TextBlock Text="Save PNG"
+                                                   FontSize="14"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+
+                                <Button Grid.Column="2"
+                                        x:Name="ExportSvgButton"
+                                        Height="48"
+                                        IsEnabled="False"
+                                        Style="{StaticResource OutlineButtonStyle}"
+                                        Click="ExportSvgButton_Click">
+                                    <StackPanel Orientation="Horizontal">
+                                        <materialDesign:PackIcon Kind="FileCode"
+                                                                 Width="18" Height="18"
+                                                                 VerticalAlignment="Center"
+                                                                 Margin="0,0,10,0"/>
+                                        <TextBlock Text="Export SVG"
+                                                   FontSize="14"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
                             </Grid>
-                        </materialDesign:Card>
-
-                        <Grid Grid.Row="1">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="12"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-
-                            <Button Grid.Column="0"
-                                    x:Name="SaveButton"
-                                    Height="48"
-                                    IsEnabled="False"
-                                    Style="{StaticResource MaterialDesignRaisedButton}"
-                                    Background="{DynamicResource PrimaryHueMidBrush}"
-                                    Foreground="White"
-                                    FontSize="15"
-                                    FontWeight="Bold"
-                                    materialDesign:ButtonAssist.CornerRadius="10"
-                                    Click="SaveButton_Click"
-                                    Cursor="Hand">
-                                <StackPanel Orientation="Horizontal">
-                                    <materialDesign:PackIcon Kind="ContentSave"
-                                                             Width="20" Height="20"
-                                                             VerticalAlignment="Center"
-                                                             Margin="0,0,10,0"/>
-                                    <TextBlock Text="Save QR Code" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
-
-                            <Button Grid.Column="2"
-                                    x:Name="ExportSvgButton"
-                                    Height="48"
-                                    IsEnabled="False"
-                                    Style="{StaticResource MaterialDesignOutlinedButton}"
-                                    Foreground="{DynamicResource PrimaryHueLightBrush}"
-                                    FontSize="15"
-                                    FontWeight="Bold"
-                                    materialDesign:ButtonAssist.CornerRadius="10"
-                                    Click="ExportSvgButton_Click"
-                                    Cursor="Hand">
-                                <StackPanel Orientation="Horizontal">
-                                    <materialDesign:PackIcon Kind="FileCode"
-                                                             Width="20" Height="20"
-                                                             VerticalAlignment="Center"
-                                                             Margin="0,0,10,0"/>
-                                    <TextBlock Text="Export SVG" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
                         </Grid>
-                    </Grid>
-                </Grid>
-            </Grid>
+
+                    </Grid><!-- /Content Grid -->
+                </Grid><!-- /Row 1 Grid -->
+
+            </Grid><!-- /Main Grid -->
         </materialDesign:DialogHost>
     </Border>
 </Window>

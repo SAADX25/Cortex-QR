@@ -153,6 +153,29 @@ namespace CortexQR.Views
             Close();
         }
 
+        private void MaximizeButton_Click(object sender, RoutedEventArgs e)
+        {
+            WindowState = WindowState == WindowState.Maximized
+                ? WindowState.Normal
+                : WindowState.Maximized;
+        }
+
+        // ── Sidebar Navigation ────────────────────────────────────────────
+
+        private void NavButton_Checked(object sender, RoutedEventArgs e)
+        {
+            if (!IsLoaded) return;
+            if (sender is System.Windows.Controls.RadioButton rb)
+                SidebarNavigate(rb.Tag?.ToString() ?? "Generator");
+        }
+
+        private void SidebarNavigate(string section)
+        {
+            GeneratorPanel.Visibility = section == "Generator" ? Visibility.Visible : Visibility.Collapsed;
+            BatchPanel.Visibility     = section == "Batch"     ? Visibility.Visible : Visibility.Collapsed;
+            PresetsPanel.Visibility   = section == "Presets"   ? Visibility.Visible : Visibility.Collapsed;
+        }
+
         private void ResetButton_Click(object sender, RoutedEventArgs e)
         {
             _isResetting = true;

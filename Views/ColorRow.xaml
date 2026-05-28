@@ -16,18 +16,14 @@
                    Text="{Binding Label, ElementName=Root}"
                    VerticalAlignment="Center"
                    FontSize="12"
-                   Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+                   Foreground="{StaticResource TextSecondaryBrush}"/>
 
         <!-- Hex TextBox -->
         <TextBox x:Name="HexBox"
                  Grid.Column="1"
-                 materialDesign:HintAssist.Hint="#RRGGBB"
-                 materialDesign:HintAssist.IsFloating="False"
-                 Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                 Style="{StaticResource ModernTextBoxStyle}"
                  FontFamily="Consolas"
                  FontSize="13"
-                 Padding="8,6"
-                 VerticalContentAlignment="Center"
                  KeyDown="HexBox_KeyDown"
                  LostFocus="HexBox_LostFocus"/>
 
