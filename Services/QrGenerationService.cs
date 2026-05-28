@@ -122,6 +122,7 @@ namespace CortexQR.Services
             int bottomLeftEyeY = numModules - quietZone - 7;
             string normalizedModuleShape = NormalizeShape(moduleShape);
             string normalizedEyeShape = NormalizeShape(eyeShape);
+            bool isLiquidModule = normalizedModuleShape == "liquid" || normalizedModuleShape == "liquidblobs";
 
             Bitmap? logo = null;
             RectangleF logoRect = RectangleF.Empty;
@@ -174,19 +175,20 @@ namespace CortexQR.Services
                         {
                             for (int x = 0; x < numModules; x++)
                             {
-                                if (IsFinderPatternZone(x, y, numModules, quietZone))
-                                    continue;
-
-                                if (!qrCodeData.ModuleMatrix[y][x])
+                                if (!IsDataModuleVisible(qrCodeData, x, y, numModules, quietZone, logoCutoutBounds, addLogoBackground, pixelsPerModule))
                                     continue;
 
                                 float rectX = x * pixelsPerModule;
                                 float rectY = y * pixelsPerModule;
 
-                                if (addLogoBackground &&
-                                    !logoCutoutBounds.IsEmpty &&
-                                    IsModuleCenterInsideEllipse(rectX, rectY, pixelsPerModule, logoCutoutBounds))
+                                if (isLiquidModule)
                                 {
+                                    bool hasTop = IsDataModuleVisible(qrCodeData, x, y - 1, numModules, quietZone, logoCutoutBounds, addLogoBackground, pixelsPerModule);
+                                    bool hasRight = IsDataModuleVisible(qrCodeData, x + 1, y, numModules, quietZone, logoCutoutBounds, addLogoBackground, pixelsPerModule);
+                                    bool hasBottom = IsDataModuleVisible(qrCodeData, x, y + 1, numModules, quietZone, logoCutoutBounds, addLogoBackground, pixelsPerModule);
+                                    bool hasLeft = IsDataModuleVisible(qrCodeData, x - 1, y, numModules, quietZone, logoCutoutBounds, addLogoBackground, pixelsPerModule);
+
+                                    DrawLiquidModule(graphics, fgBrush, rectX, rectY, pixelsPerModule, hasTop, hasRight, hasBottom, hasLeft);
                                     continue;
                                 }
 
@@ -256,6 +258,7 @@ namespace CortexQR.Services
             int bottomLeftEyeY = numModules - quietZone - 7;
             string normalizedModuleShape = NormalizeShape(moduleShape);
             string normalizedEyeShape = NormalizeShape(eyeShape);
+            bool isLiquidModule = normalizedModuleShape == "liquid" || normalizedModuleShape == "liquidblobs";
             RectangleF logoRect = RectangleF.Empty;
             RectangleF logoCutoutBounds = RectangleF.Empty;
             string? logoDataUri = null;
@@ -312,19 +315,20 @@ namespace CortexQR.Services
             {
                 for (int x = 0; x < numModules; x++)
                 {
-                    if (IsFinderPatternZone(x, y, numModules, quietZone))
-                        continue;
-
-                    if (!qrCodeData.ModuleMatrix[y][x])
+                    if (!IsDataModuleVisible(qrCodeData, x, y, numModules, quietZone, logoCutoutBounds, addLogoBackground, pixelsPerModule))
                         continue;
 
                     float rectX = x * pixelsPerModule;
                     float rectY = y * pixelsPerModule;
 
-                    if (addLogoBackground &&
-                        !logoCutoutBounds.IsEmpty &&
-                        IsModuleCenterInsideEllipse(rectX, rectY, pixelsPerModule, logoCutoutBounds))
+                    if (isLiquidModule)
                     {
+                        bool hasTop = IsDataModuleVisible(qrCodeData, x, y - 1, numModules, quietZone, logoCutoutBounds, addLogoBackground, pixelsPerModule);
+                        bool hasRight = IsDataModuleVisible(qrCodeData, x + 1, y, numModules, quietZone, logoCutoutBounds, addLogoBackground, pixelsPerModule);
+                        bool hasBottom = IsDataModuleVisible(qrCodeData, x, y + 1, numModules, quietZone, logoCutoutBounds, addLogoBackground, pixelsPerModule);
+                        bool hasLeft = IsDataModuleVisible(qrCodeData, x - 1, y, numModules, quietZone, logoCutoutBounds, addLogoBackground, pixelsPerModule);
+
+                        AppendSvgLiquidModule(svg, rectX, rectY, pixelsPerModule, hasTop, hasRight, hasBottom, hasLeft, dataFill, useGradient ? null : fgColor);
                         continue;
                     }
 
@@ -388,6 +392,36 @@ namespace CortexQR.Services
             graphics.FillRectangle(brush, x, y, pixelsPerModule, pixelsPerModule);
         }
 
+        private static void DrawLiquidModule(
+            Graphics graphics,
+            Brush brush,
+            float x,
+            float y,
+            int pixelsPerModule,
+            bool hasTop,
+            bool hasRight,
+            bool hasBottom,
+            bool hasLeft)
+        {
+            float radius = pixelsPerModule * 0.5f;
+            float radiusTopLeft = (!hasTop && !hasLeft) ? radius : 0f;
+            float radiusTopRight = (!hasTop && !hasRight) ? radius : 0f;
+            float radiusBottomRight = (!hasBottom && !hasRight) ? radius : 0f;
+            float radiusBottomLeft = (!hasBottom && !hasLeft) ? radius : 0f;
+
+            if (radiusTopLeft == 0f && radiusTopRight == 0f && radiusBottomRight == 0f && radiusBottomLeft == 0f)
+            {
+                graphics.FillRectangle(brush, x, y, pixelsPerModule, pixelsPerModule);
+                return;
+            }
+
+            RectangleF rect = new RectangleF(x, y, pixelsPerModule, pixelsPerModule);
+            using (GraphicsPath path = CreateCustomRoundedRectanglePath(rect, radiusTopLeft, radiusTopRight, radiusBottomRight, radiusBottomLeft))
+            {
+                graphics.FillPath(brush, path);
+            }
+        }
+
         private static Brush CreateForegroundBrush(int size, Color fgColor, Color fg2Color, bool useGradient)
         {
             if (!useGradient)
@@ -437,6 +471,35 @@ namespace CortexQR.Services
             svg.AppendLine(string.Create(CultureInfo.InvariantCulture, $"""  <rect x="{F(x)}" y="{F(y)}" width="{pixelsPerModule}" height="{pixelsPerModule}" {SvgFill(fill, solidColor)} />"""));
         }
 
+        private static void AppendSvgLiquidModule(
+            StringBuilder svg,
+            float x,
+            float y,
+            int pixelsPerModule,
+            bool hasTop,
+            bool hasRight,
+            bool hasBottom,
+            bool hasLeft,
+            string fill,
+            Color? solidColor)
+        {
+            float radius = pixelsPerModule * 0.5f;
+            float radiusTopLeft = (!hasTop && !hasLeft) ? radius : 0f;
+            float radiusTopRight = (!hasTop && !hasRight) ? radius : 0f;
+            float radiusBottomRight = (!hasBottom && !hasRight) ? radius : 0f;
+            float radiusBottomLeft = (!hasBottom && !hasLeft) ? radius : 0f;
+
+            if (radiusTopLeft == 0f && radiusTopRight == 0f && radiusBottomRight == 0f && radiusBottomLeft == 0f)
+            {
+                svg.AppendLine(string.Create(CultureInfo.InvariantCulture, $"""  <rect x="{F(x)}" y="{F(y)}" width="{pixelsPerModule}" height="{pixelsPerModule}" {SvgFill(fill, solidColor)} />"""));
+                return;
+            }
+
+            RectangleF rect = new RectangleF(x, y, pixelsPerModule, pixelsPerModule);
+            string path = CreateCustomRoundedRectangleSvgPath(rect, radiusTopLeft, radiusTopRight, radiusBottomRight, radiusBottomLeft);
+            svg.AppendLine(string.Create(CultureInfo.InvariantCulture, $"""  <path d="{path}" {SvgFill(fill, solidColor)} />"""));
+        }
+
         private static void AppendSvgFinderEye(
             StringBuilder svg,
             Color outerColor,
@@ -460,6 +523,18 @@ namespace CortexQR.Services
 
         private static void AppendSvgEyeShape(StringBuilder svg, RectangleF rect, string eyeShape, float radius, Color color)
         {
+            if (eyeShape == "leaf")
+            {
+                svg.AppendLine(string.Create(CultureInfo.InvariantCulture, $"""  <path d="{CreateLeafEyeSvgPath(rect)}" {SvgFill(ToSvgColor(color), color)} />"""));
+                return;
+            }
+
+            if (eyeShape == "shield")
+            {
+                svg.AppendLine(string.Create(CultureInfo.InvariantCulture, $"""  <path d="{CreateShieldEyeSvgPath(rect)}" {SvgFill(ToSvgColor(color), color)} />"""));
+                return;
+            }
+
             if (eyeShape == "circular")
             {
                 AppendSvgEllipse(
@@ -529,6 +604,24 @@ namespace CortexQR.Services
 
         private static void FillEyeShape(Graphics graphics, Brush brush, RectangleF rect, string eyeShape, float radius)
         {
+            if (eyeShape == "leaf")
+            {
+                using (GraphicsPath path = CreateLeafEyePath(rect))
+                {
+                    graphics.FillPath(brush, path);
+                }
+                return;
+            }
+
+            if (eyeShape == "shield")
+            {
+                using (GraphicsPath path = CreateShieldEyePath(rect))
+                {
+                    graphics.FillPath(brush, path);
+                }
+                return;
+            }
+
             if (eyeShape == "circular")
             {
                 graphics.FillEllipse(brush, rect);
@@ -565,6 +658,119 @@ namespace CortexQR.Services
             return path;
         }
 
+        private static GraphicsPath CreateLeafEyePath(RectangleF rect)
+        {
+            float left = rect.Left;
+            float top = rect.Top;
+            float right = rect.Right;
+            float bottom = rect.Bottom;
+            float width = rect.Width;
+            float height = rect.Height;
+            float centerX = left + width / 2f;
+            float centerY = top + height / 2f;
+            float controlX = width * 0.35f;
+            float controlY = height * 0.35f;
+
+            GraphicsPath path = new GraphicsPath();
+            path.StartFigure();
+            path.AddBezier(
+                new PointF(centerX, top),
+                new PointF(centerX + controlX, top),
+                new PointF(right, centerY - controlY),
+                new PointF(right, centerY));
+            path.AddBezier(
+                new PointF(right, centerY),
+                new PointF(right, centerY + controlY),
+                new PointF(centerX + controlX, bottom),
+                new PointF(centerX, bottom));
+            path.AddBezier(
+                new PointF(centerX, bottom),
+                new PointF(centerX - controlX, bottom),
+                new PointF(left, centerY + controlY),
+                new PointF(left, centerY));
+            path.AddBezier(
+                new PointF(left, centerY),
+                new PointF(left, centerY - controlY),
+                new PointF(centerX - controlX, top),
+                new PointF(centerX, top));
+            path.CloseFigure();
+            return path;
+        }
+
+        private static GraphicsPath CreateShieldEyePath(RectangleF rect)
+        {
+            float left = rect.Left;
+            float top = rect.Top;
+            float right = rect.Right;
+            float bottom = rect.Bottom;
+            float width = rect.Width;
+            float height = rect.Height;
+            float radius = Math.Min(width, height) * 0.2f;
+            float midY = top + height * 0.62f;
+            float centerX = left + width / 2f;
+
+            GraphicsPath path = new GraphicsPath();
+            path.StartFigure();
+            path.AddArc(left, top, radius * 2f, radius * 2f, 180, 90);
+            path.AddLine(left + radius, top, right - radius, top);
+            path.AddArc(right - radius * 2f, top, radius * 2f, radius * 2f, 270, 90);
+            path.AddLine(right, top + radius, right, midY);
+            path.AddLine(right, midY, centerX, bottom);
+            path.AddLine(centerX, bottom, left, midY);
+            path.AddLine(left, midY, left, top + radius);
+            path.CloseFigure();
+            return path;
+        }
+
+        private static GraphicsPath CreateCustomRoundedRectanglePath(
+            RectangleF rect,
+            float radiusTopLeft,
+            float radiusTopRight,
+            float radiusBottomRight,
+            float radiusBottomLeft)
+        {
+            float left = rect.Left;
+            float top = rect.Top;
+            float right = rect.Right;
+            float bottom = rect.Bottom;
+            float maxRadius = Math.Min(rect.Width, rect.Height) / 2f;
+
+            float rtl = Math.Min(radiusTopLeft, maxRadius);
+            float rtr = Math.Min(radiusTopRight, maxRadius);
+            float rbr = Math.Min(radiusBottomRight, maxRadius);
+            float rbl = Math.Min(radiusBottomLeft, maxRadius);
+
+            GraphicsPath path = new GraphicsPath();
+            path.StartFigure();
+
+            path.AddLine(left + rtl, top, right - rtr, top);
+            if (rtr > 0f)
+                path.AddArc(right - rtr * 2f, top, rtr * 2f, rtr * 2f, 270, 90);
+            else
+                path.AddLine(right, top, right, top);
+
+            path.AddLine(right, top + rtr, right, bottom - rbr);
+            if (rbr > 0f)
+                path.AddArc(right - rbr * 2f, bottom - rbr * 2f, rbr * 2f, rbr * 2f, 0, 90);
+            else
+                path.AddLine(right, bottom, right, bottom);
+
+            path.AddLine(right - rbr, bottom, left + rbl, bottom);
+            if (rbl > 0f)
+                path.AddArc(left, bottom - rbl * 2f, rbl * 2f, rbl * 2f, 90, 90);
+            else
+                path.AddLine(left, bottom, left, bottom);
+
+            path.AddLine(left, bottom - rbl, left, top + rtl);
+            if (rtl > 0f)
+                path.AddArc(left, top, rtl * 2f, rtl * 2f, 180, 90);
+            else
+                path.AddLine(left, top, left, top);
+
+            path.CloseFigure();
+            return path;
+        }
+
         private static string CreateRoundedRectangleSvgPath(RectangleF rect, float radius)
         {
             float r = Math.Min(radius, Math.Min(rect.Width, rect.Height) / 2f);
@@ -576,6 +782,93 @@ namespace CortexQR.Services
             return string.Create(
                 CultureInfo.InvariantCulture,
                 $"""M {F(left + r)} {F(top)} H {F(right - r)} A {F(r)} {F(r)} 0 0 1 {F(right)} {F(top + r)} V {F(bottom - r)} A {F(r)} {F(r)} 0 0 1 {F(right - r)} {F(bottom)} H {F(left + r)} A {F(r)} {F(r)} 0 0 1 {F(left)} {F(bottom - r)} V {F(top + r)} A {F(r)} {F(r)} 0 0 1 {F(left + r)} {F(top)} Z""");
+        }
+
+        private static string CreateLeafEyeSvgPath(RectangleF rect)
+        {
+            float left = rect.Left;
+            float top = rect.Top;
+            float right = rect.Right;
+            float bottom = rect.Bottom;
+            float width = rect.Width;
+            float height = rect.Height;
+            float centerX = left + width / 2f;
+            float centerY = top + height / 2f;
+            float controlX = width * 0.35f;
+            float controlY = height * 0.35f;
+
+            return string.Create(
+                CultureInfo.InvariantCulture,
+                $"""M {F(centerX)} {F(top)} C {F(centerX + controlX)} {F(top)} {F(right)} {F(centerY - controlY)} {F(right)} {F(centerY)} C {F(right)} {F(centerY + controlY)} {F(centerX + controlX)} {F(bottom)} {F(centerX)} {F(bottom)} C {F(centerX - controlX)} {F(bottom)} {F(left)} {F(centerY + controlY)} {F(left)} {F(centerY)} C {F(left)} {F(centerY - controlY)} {F(centerX - controlX)} {F(top)} {F(centerX)} {F(top)} Z""");
+        }
+
+        private static string CreateShieldEyeSvgPath(RectangleF rect)
+        {
+            float left = rect.Left;
+            float top = rect.Top;
+            float right = rect.Right;
+            float bottom = rect.Bottom;
+            float width = rect.Width;
+            float height = rect.Height;
+            float radius = Math.Min(width, height) * 0.2f;
+            float midY = top + height * 0.62f;
+            float centerX = left + width / 2f;
+
+            return string.Create(
+                CultureInfo.InvariantCulture,
+                $"""M {F(left + radius)} {F(top)} H {F(right - radius)} A {F(radius)} {F(radius)} 0 0 1 {F(right)} {F(top + radius)} V {F(midY)} L {F(centerX)} {F(bottom)} L {F(left)} {F(midY)} V {F(top + radius)} A {F(radius)} {F(radius)} 0 0 1 {F(left + radius)} {F(top)} Z""");
+        }
+
+        private static string CreateCustomRoundedRectangleSvgPath(
+            RectangleF rect,
+            float radiusTopLeft,
+            float radiusTopRight,
+            float radiusBottomRight,
+            float radiusBottomLeft)
+        {
+            float left = rect.Left;
+            float top = rect.Top;
+            float right = rect.Right;
+            float bottom = rect.Bottom;
+            float maxRadius = Math.Min(rect.Width, rect.Height) / 2f;
+
+            float rtl = Math.Min(radiusTopLeft, maxRadius);
+            float rtr = Math.Min(radiusTopRight, maxRadius);
+            float rbr = Math.Min(radiusBottomRight, maxRadius);
+            float rbl = Math.Min(radiusBottomLeft, maxRadius);
+
+            var path = new StringBuilder();
+            path.Append(string.Create(CultureInfo.InvariantCulture, $"""M {F(left + rtl)} {F(top)} """));
+            path.Append(string.Create(CultureInfo.InvariantCulture, $"""H {F(right - rtr)} """));
+
+            if (rtr > 0f)
+                path.Append(string.Create(CultureInfo.InvariantCulture, $"""A {F(rtr)} {F(rtr)} 0 0 1 {F(right)} {F(top + rtr)} """));
+            else
+                path.Append(string.Create(CultureInfo.InvariantCulture, $"""L {F(right)} {F(top)} """));
+
+            path.Append(string.Create(CultureInfo.InvariantCulture, $"""V {F(bottom - rbr)} """));
+
+            if (rbr > 0f)
+                path.Append(string.Create(CultureInfo.InvariantCulture, $"""A {F(rbr)} {F(rbr)} 0 0 1 {F(right - rbr)} {F(bottom)} """));
+            else
+                path.Append(string.Create(CultureInfo.InvariantCulture, $"""L {F(right)} {F(bottom)} """));
+
+            path.Append(string.Create(CultureInfo.InvariantCulture, $"""H {F(left + rbl)} """));
+
+            if (rbl > 0f)
+                path.Append(string.Create(CultureInfo.InvariantCulture, $"""A {F(rbl)} {F(rbl)} 0 0 1 {F(left)} {F(bottom - rbl)} """));
+            else
+                path.Append(string.Create(CultureInfo.InvariantCulture, $"""L {F(left)} {F(bottom)} """));
+
+            path.Append(string.Create(CultureInfo.InvariantCulture, $"""V {F(top + rtl)} """));
+
+            if (rtl > 0f)
+                path.Append(string.Create(CultureInfo.InvariantCulture, $"""A {F(rtl)} {F(rtl)} 0 0 1 {F(left + rtl)} {F(top)} """));
+            else
+                path.Append(string.Create(CultureInfo.InvariantCulture, $"""L {F(left)} {F(top)} """));
+
+            path.Append("Z");
+            return path.ToString();
         }
 
         private static string SvgFill(string fill, Color? solidColor)
@@ -636,6 +929,36 @@ namespace CortexQR.Services
                                 y >= numModules - quietZone - finderSize && y < numModules - quietZone;
 
             return inTopLeft || inTopRight || inBottomLeft;
+        }
+
+        private static bool IsDataModuleVisible(
+            QRCodeData qrCodeData,
+            int x,
+            int y,
+            int numModules,
+            int quietZone,
+            RectangleF logoCutoutBounds,
+            bool addLogoBackground,
+            int pixelsPerModule)
+        {
+            if (x < 0 || y < 0 || x >= numModules || y >= numModules)
+                return false;
+
+            if (IsFinderPatternZone(x, y, numModules, quietZone))
+                return false;
+
+            if (!qrCodeData.ModuleMatrix[y][x])
+                return false;
+
+            if (addLogoBackground && !logoCutoutBounds.IsEmpty)
+            {
+                float rectX = x * pixelsPerModule;
+                float rectY = y * pixelsPerModule;
+                if (IsModuleCenterInsideEllipse(rectX, rectY, pixelsPerModule, logoCutoutBounds))
+                    return false;
+            }
+
+            return true;
         }
 
         private static bool IsModuleCenterInsideEllipse(float moduleX, float moduleY, int moduleSize, RectangleF ellipseBounds)

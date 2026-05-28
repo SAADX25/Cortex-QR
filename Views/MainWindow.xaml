@@ -405,6 +405,8 @@
                                             <ComboBoxItem Content="Square"/>
                                             <ComboBoxItem Content="Rounded"/>
                                             <ComboBoxItem Content="Circular"/>
+                                            <ComboBoxItem Content="Leaf"/>
+                                            <ComboBoxItem Content="Shield"/>
                                         </ComboBox>
                                     </Grid>
 
@@ -425,7 +427,192 @@
                                             <ComboBoxItem Content="Squares"/>
                                             <ComboBoxItem Content="Rounded Squares"/>
                                             <ComboBoxItem Content="Dots / Circles"/>
+                                            <ComboBoxItem Content="Liquid"/>
                                         </ComboBox>
+                                    </Grid>
+                                </StackPanel>
+                            </materialDesign:Card>
+
+                            <materialDesign:Card Style="{StaticResource CardStyle}">
+                                <StackPanel>
+                                    <TextBlock Text="BATCH"
+                                               FontSize="11"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                               Margin="0,0,0,10"/>
+
+                                    <TextBlock Text="CSV columns: data (required), filename (optional)"
+                                               FontSize="11"
+                                               Foreground="{DynamicResource MaterialDesignBodyLight}"
+                                               Margin="0,0,0,12"/>
+
+                                    <Grid Margin="0,0,0,12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox x:Name="BatchCsvPathTextBox"
+                                                 Grid.Column="0"
+                                                 materialDesign:HintAssist.Hint="Select CSV file"
+                                                 materialDesign:HintAssist.IsFloating="True"
+                                                 Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                                 IsReadOnly="True"
+                                                 FontSize="12"
+                                                 Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+                                        <Button x:Name="BatchBrowseCsvButton"
+                                                Grid.Column="1"
+                                                Content="BROWSE"
+                                                Margin="10,0,0,0"
+                                                Style="{StaticResource MaterialDesignOutlinedButton}"
+                                                Padding="14,0"
+                                                Height="40"
+                                                Click="BatchBrowseCsvButton_Click"
+                                                Cursor="Hand"/>
+                                    </Grid>
+
+                                    <Grid Margin="0,0,0,12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox x:Name="BatchOutputFolderTextBox"
+                                                 Grid.Column="0"
+                                                 materialDesign:HintAssist.Hint="Output folder"
+                                                 materialDesign:HintAssist.IsFloating="True"
+                                                 Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                                 IsReadOnly="True"
+                                                 FontSize="12"
+                                                 Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+                                        <Button x:Name="BatchBrowseOutputButton"
+                                                Grid.Column="1"
+                                                Content="BROWSE"
+                                                Margin="10,0,0,0"
+                                                Style="{StaticResource MaterialDesignOutlinedButton}"
+                                                Padding="14,0"
+                                                Height="40"
+                                                Click="BatchBrowseOutputButton_Click"
+                                                Cursor="Hand"/>
+                                    </Grid>
+
+                                    <Grid Margin="0,0,0,12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0"
+                                                   Text="Format"
+                                                   Style="{StaticResource ColorLabelStyle}"
+                                                   Width="110"/>
+                                        <ComboBox x:Name="BatchOutputFormatComboBox"
+                                                  Grid.Column="1"
+                                                  SelectedIndex="0"
+                                                  Style="{StaticResource MaterialDesignOutlinedComboBox}">
+                                            <ComboBoxItem Content="PNG"/>
+                                            <ComboBoxItem Content="SVG"/>
+                                        </ComboBox>
+                                    </Grid>
+
+                                    <ProgressBar x:Name="BatchProgressBar"
+                                                 Height="8"
+                                                 Minimum="0"
+                                                 Maximum="100"
+                                                 Value="0"
+                                                 Style="{StaticResource MaterialDesignLinearProgressBar}"
+                                                 Margin="0,0,0,8"/>
+
+                                    <TextBlock x:Name="BatchStatusTextBlock"
+                                               Text="Idle"
+                                               FontSize="12"
+                                               Foreground="{DynamicResource MaterialDesignBodyLight}"
+                                               Margin="0,0,0,12"/>
+
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="12"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Button x:Name="BatchStartButton"
+                                                Grid.Column="0"
+                                                Height="40"
+                                                Style="{StaticResource MaterialDesignRaisedButton}"
+                                                Background="{DynamicResource PrimaryHueMidBrush}"
+                                                Foreground="White"
+                                                FontSize="13"
+                                                FontWeight="SemiBold"
+                                                materialDesign:ButtonAssist.CornerRadius="8"
+                                                Click="BatchStartButton_Click"
+                                                Cursor="Hand">
+                                            Start Batch
+                                        </Button>
+
+                                        <Button x:Name="BatchCancelButton"
+                                                Grid.Column="2"
+                                                Height="40"
+                                                IsEnabled="False"
+                                                Style="{StaticResource MaterialDesignOutlinedButton}"
+                                                Foreground="{DynamicResource PrimaryHueLightBrush}"
+                                                FontSize="13"
+                                                FontWeight="SemiBold"
+                                                materialDesign:ButtonAssist.CornerRadius="8"
+                                                Click="BatchCancelButton_Click"
+                                                Cursor="Hand">
+                                            Cancel
+                                        </Button>
+                                    </Grid>
+                                </StackPanel>
+                            </materialDesign:Card>
+
+                            <materialDesign:Card Style="{StaticResource CardStyle}">
+                                <StackPanel>
+                                    <TextBlock Text="PRESETS"
+                                               FontSize="11"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                               Margin="0,0,0,10"/>
+
+                                    <ComboBox x:Name="PresetComboBox"
+                                              Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                                              materialDesign:HintAssist.Hint="Select a preset"
+                                              DisplayMemberPath="Name"
+                                              SelectionChanged="PresetComboBox_SelectionChanged"
+                                              Margin="0,0,0,12"/>
+
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="12"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Button x:Name="PresetSaveButton"
+                                                Grid.Column="0"
+                                                Height="40"
+                                                Style="{StaticResource MaterialDesignRaisedButton}"
+                                                Background="{DynamicResource PrimaryHueMidBrush}"
+                                                Foreground="White"
+                                                FontSize="13"
+                                                FontWeight="SemiBold"
+                                                materialDesign:ButtonAssist.CornerRadius="8"
+                                                Click="PresetSaveButton_Click"
+                                                Cursor="Hand">
+                                            Save Preset
+                                        </Button>
+
+                                        <Button x:Name="PresetLoadButton"
+                                                Grid.Column="2"
+                                                Height="40"
+                                                IsEnabled="False"
+                                                Style="{StaticResource MaterialDesignOutlinedButton}"
+                                                Foreground="{DynamicResource PrimaryHueLightBrush}"
+                                                FontSize="13"
+                                                FontWeight="SemiBold"
+                                                materialDesign:ButtonAssist.CornerRadius="8"
+                                                Click="PresetLoadButton_Click"
+                                                Cursor="Hand">
+                                            Load Preset
+                                        </Button>
                                     </Grid>
                                 </StackPanel>
                             </materialDesign:Card>
