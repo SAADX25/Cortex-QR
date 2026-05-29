@@ -256,6 +256,9 @@
                                                                    Style="{StaticResource FieldLabelStyle}"/>
                                                         <TextBox x:Name="DataTextBox"
                                                                  Style="{StaticResource ModernTextBoxStyle}"
+                                                                 Background="{StaticResource Surface3Brush}"
+                                                                 BorderBrush="#555555"
+                                                                 BorderThickness="1"
                                                                  TextChanged="SettingChanged"/>
                                                     </StackPanel>
                                                 </TabItem>
@@ -805,60 +808,71 @@
                                     CornerRadius="16"
                                     Margin="0,0,0,16"
                                     ClipToBounds="True">
-                                <Border.Effect>
-                                    <DropShadowEffect Color="#0A84FF" BlurRadius="40"
-                                                      ShadowDepth="0" Opacity="0.15"/>
-                                </Border.Effect>
-
                                 <Grid>
-                                    <!-- Radial glow behind QR code -->
-                                    <Ellipse HorizontalAlignment="Center"
-                                             VerticalAlignment="Center"
-                                             Width="320" Height="320">
-                                        <Ellipse.Fill>
-                                            <RadialGradientBrush>
-                                                <GradientStop Color="#0D1E38" Offset="0"/>
-                                                <GradientStop Color="Transparent" Offset="1"/>
-                                            </RadialGradientBrush>
-                                        </Ellipse.Fill>
-                                    </Ellipse>
-
                                     <!-- Empty state hint -->
                                     <Border x:Name="EmptyHint"
                                             HorizontalAlignment="Center"
                                             VerticalAlignment="Center">
-                                        <StackPanel HorizontalAlignment="Center">
-                                            <Border Width="80" Height="80" CornerRadius="20"
-                                                    HorizontalAlignment="Center"
-                                                    Margin="0,0,0,16">
-                                                <Border.Background>
-                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                                        <GradientStop Color="#1A1A2E" Offset="0"/>
-                                                        <GradientStop Color="#1D1A40" Offset="1"/>
-                                                    </LinearGradientBrush>
-                                                </Border.Background>
-                                                <materialDesign:PackIcon Kind="QrCode"
-                                                                         Width="44" Height="44"
-                                                                         HorizontalAlignment="Center"
-                                                                         VerticalAlignment="Center"
-                                                                         Foreground="{StaticResource TextMutedBrush}"/>
-                                            </Border>
-                                            <TextBlock Text="Enter content to generate"
-                                                       FontSize="13"
-                                                       Foreground="{StaticResource TextMutedBrush}"
-                                                       HorizontalAlignment="Center"/>
-                                            <TextBlock Text="a QR code"
-                                                       FontSize="13"
-                                                       Foreground="{StaticResource TextMutedBrush}"
-                                                       HorizontalAlignment="Center"/>
-                                        </StackPanel>
+                                        <Grid Width="260" Height="260">
+                                            <Rectangle RadiusX="20" RadiusY="20"
+                                                       Stroke="#2B3A52"
+                                                       StrokeThickness="1.2"
+                                                       StrokeDashArray="4 4"/>
+                                            <StackPanel HorizontalAlignment="Center"
+                                                        VerticalAlignment="Center">
+                                                <Border Width="56" Height="56" CornerRadius="14"
+                                                        Background="{StaticResource Surface2Brush}"
+                                                        BorderBrush="{StaticResource BorderSubtleBrush}"
+                                                        BorderThickness="1"
+                                                        Margin="0,0,0,12">
+                                                    <materialDesign:PackIcon Kind="QrCode"
+                                                                             Width="28" Height="28"
+                                                                             HorizontalAlignment="Center"
+                                                                             VerticalAlignment="Center"
+                                                                             Foreground="{StaticResource TextSecondaryBrush}"/>
+                                                </Border>
+                                                <TextBlock Text="Enter content to generate"
+                                                           FontSize="13"
+                                                           Foreground="#C8D4E6"
+                                                           HorizontalAlignment="Center"/>
+                                                <TextBlock Text="a QR code"
+                                                           FontSize="13"
+                                                           Foreground="#C8D4E6"
+                                                           HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Grid>
                                     </Border>
 
                                     <!-- Live QR code image -->
-                                    <Image x:Name="QrCodeImage"
-                                           Stretch="Uniform"
-                                           Margin="36"
-                                           RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                                    <Border x:Name="QrImageCard"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            Background="{StaticResource SurfaceBrush}"
+                                            BorderBrush="{StaticResource BorderSubtleBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="16"
+                                            Padding="24"
+                                            SnapsToDevicePixels="True">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding ElementName=EmptyHint, Path=Visibility}" Value="Visible">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <Border.Effect>
+                                            <DropShadowEffect Color="#000000"
+                                                              BlurRadius="24"
+                                                              ShadowDepth="6"
+                                                              Opacity="0.35"/>
+                                        </Border.Effect>
+                                        <Image x:Name="QrCodeImage"
+                                               Stretch="Uniform"
+                                               RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                                    </Border>
                                 </Grid>
                             </Border>
 
@@ -875,6 +889,7 @@
                                         Height="48"
                                         IsEnabled="False"
                                         Style="{StaticResource PrimaryButtonStyle}"
+                                    Background="{StaticResource AccentBrush}"
                                         Click="SaveButton_Click">
                                     <StackPanel Orientation="Horizontal">
                                         <materialDesign:PackIcon Kind="ContentSave"
@@ -892,6 +907,8 @@
                                         Height="48"
                                         IsEnabled="False"
                                         Style="{StaticResource OutlineButtonStyle}"
+                                    Background="{StaticResource Surface3Brush}"
+                                    BorderBrush="{StaticResource AccentHoverBrush}"
                                         Click="ExportSvgButton_Click">
                                     <StackPanel Orientation="Horizontal">
                                         <materialDesign:PackIcon Kind="FileCode"
