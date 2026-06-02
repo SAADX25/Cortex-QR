@@ -1,13 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -15,8 +11,8 @@ using Microsoft.Win32;
 using CortexQR.Models;
 using CortexQR.Services;
 using CortexQR.Helpers;
+using CortexQR.ViewModels;
 using QRCoder;
-using WinForms = System.Windows.Forms;
 
 namespace CortexQR.Views
 {
@@ -28,62 +24,30 @@ namespace CortexQR.Views
         private readonly PresetStorage _presetStorage;
         private readonly ObservableCollection<PresetInfo> _presetItems = new();
         private bool _isResetting;
-        private CancellationTokenSource? _batchCts;
-        private bool _isBatchRunning;
-
-        private static readonly HashSet<string> DataHeaderNames = new(StringComparer.OrdinalIgnoreCase)
-        {
-            "data",
-            "payload",
-            "text",
-            "content",
-            "url",
-            "qr",
-            "qrdata",
-            "qrcode",
-            "qrcontent",
-            "message"
-        };
-
-        private static readonly HashSet<string> FileHeaderNames = new(StringComparer.OrdinalIgnoreCase)
-        {
-            "filename",
-            "file",
-            "name",
-            "title",
-            "id"
-        };
-
-        private sealed record BatchItem(string Data, string FileName, int RowNumber);
-
-        private sealed record BatchProgress(int Completed, int Total, int Errors, string? CurrentFile);
-
-        private sealed class BatchRenderSettings
-        {
-            public System.Windows.Media.Color Foreground { get; init; }
-            public System.Windows.Media.Color Foreground2 { get; init; }
-            public System.Windows.Media.Color Background { get; init; }
-            public System.Windows.Media.Color Finder { get; init; }
-            public System.Windows.Media.Color InnerEye { get; init; }
-            public bool UseGradient { get; init; }
-            public string ModuleShape { get; init; } = "Squares";
-            public string EyeShape { get; init; } = "Square";
-            public int LogoSizePercent { get; init; }
-            public bool AddLogoBackground { get; init; }
-            public string LogoPath { get; init; } = string.Empty;
-        }
+        private readonly BatchProcessingViewModel _batchViewModel;
 
         public MainWindow()
         {
             InitializeComponent();
             _qrService = new QrGenerationService();
             _presetStorage = new PresetStorage();
+            var fileDialogs = new FileDialogService();
+            var messageDialogs = new MessageDialogService();
+            _batchViewModel = new BatchProcessingViewModel(_qrService, fileDialogs, messageDialogs, CaptureBatchRenderSettings);
             PresetComboBox.ItemsSource = _presetItems;
             LoadConfig();
             RefreshPresetList(selectNewest: false);
 
+            BatchPanel.DataContext = _batchViewModel;
+
             if (!string.IsNullOrWhiteSpace(BuildPayload()))
                 GenerateQrCode();
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            base.OnClosed(e);
+            DisposeBitmap();
         }
 
         // ── Config Persistence ────────────────────────────────────────────────
@@ -492,506 +456,56 @@ namespace CortexQR.Views
             }
         }
 
-        // ── Batch Processing ────────────────────────────────────────────────
-
-        private void BatchBrowseCsvButton_Click(object sender, RoutedEventArgs e)
-        {
-            var dlg = new OpenFileDialog
-            {
-                Title = "Select CSV File",
-                Filter = "CSV Files|*.csv|All Files|*.*"
-            };
-
-            if (dlg.ShowDialog() != true) return;
-
-            BatchCsvPathTextBox.Text = dlg.FileName;
-
-            if (string.IsNullOrWhiteSpace(BatchOutputFolderTextBox.Text))
-            {
-                string? folder = Path.GetDirectoryName(dlg.FileName);
-                if (!string.IsNullOrWhiteSpace(folder))
-                    BatchOutputFolderTextBox.Text = folder;
-            }
-        }
-
-        private void BatchBrowseOutputButton_Click(object sender, RoutedEventArgs e)
-        {
-            using var dlg = new WinForms.FolderBrowserDialog
-            {
-                Description = "Select output folder",
-                UseDescriptionForTitle = true,
-                ShowNewFolderButton = true
-            };
-
-            if (dlg.ShowDialog() == WinForms.DialogResult.OK)
-                BatchOutputFolderTextBox.Text = dlg.SelectedPath;
-        }
-
-        private async void BatchStartButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_isBatchRunning)
-                return;
-
-            await RunBatchGenerationAsync();
-        }
-
-        private void BatchCancelButton_Click(object sender, RoutedEventArgs e)
-        {
-            _batchCts?.Cancel();
-        }
-
-        private async Task RunBatchGenerationAsync()
-        {
-            string csvPath = BatchCsvPathTextBox.Text.Trim();
-            if (string.IsNullOrWhiteSpace(csvPath) || !File.Exists(csvPath))
-            {
-                MessageBox.Show("Please select a valid CSV file.", "Batch Processing",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            string outputFolder = BatchOutputFolderTextBox.Text.Trim();
-            if (string.IsNullOrWhiteSpace(outputFolder))
-            {
-                MessageBox.Show("Please select an output folder.", "Batch Processing",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            try
-            {
-                Directory.CreateDirectory(outputFolder);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Unable to create output folder: {ex.Message}", "Batch Processing",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            bool outputSvg = string.Equals(
-                (BatchOutputFormatComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString(),
-                "SVG",
-                StringComparison.OrdinalIgnoreCase);
-
-            BatchRenderSettings settings = CaptureBatchRenderSettings();
-
-            List<BatchItem> items;
-            int skippedRows;
-            try
-            {
-                items = BuildBatchItems(csvPath, out skippedRows);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"CSV parse error: {ex.Message}", "Batch Processing",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            if (items.Count == 0)
-            {
-                MessageBox.Show("No valid data rows found in the CSV.", "Batch Processing",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            _isBatchRunning = true;
-            _batchCts = new CancellationTokenSource();
-            SetBatchUiState(true);
-            BatchProgressBar.Value = 0;
-            BatchStatusTextBlock.Text = $"0 / {items.Count}";
-
-            IProgress<BatchProgress> progress = new Progress<BatchProgress>(UpdateBatchProgress);
-            var errors = new List<string>();
-            int completed = 0;
-            int errorCount = 0;
-            int maxConcurrency = Math.Max(1, Math.Min(Environment.ProcessorCount, 4));
-            using var semaphore = new SemaphoreSlim(maxConcurrency, maxConcurrency);
-            var tasks = new List<Task>(items.Count);
-            CancellationToken token = _batchCts.Token;
-
-            try
-            {
-                foreach (BatchItem item in items)
-                {
-                    await semaphore.WaitAsync(token);
-
-                    tasks.Add(Task.Run(() =>
-                    {
-                        try
-                        {
-                            token.ThrowIfCancellationRequested();
-                            GenerateAndSaveBatchItem(item, settings, outputFolder, outputSvg);
-                        }
-                        catch (OperationCanceledException)
-                        {
-                            throw;
-                        }
-                        catch (Exception ex)
-                        {
-                            lock (errors)
-                            {
-                                errors.Add($"Row {item.RowNumber}: {item.FileName} - {ex.Message}");
-                            }
-                            Interlocked.Increment(ref errorCount);
-                        }
-                        finally
-                        {
-                            int done = Interlocked.Increment(ref completed);
-                            progress.Report(new BatchProgress(done, items.Count, errorCount, item.FileName));
-                            semaphore.Release();
-                        }
-                    }, token));
-                }
-
-                await Task.WhenAll(tasks);
-            }
-            catch (OperationCanceledException)
-            {
-                if (tasks.Count > 0)
-                {
-                    try
-                    {
-                        await Task.WhenAll(tasks);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        // Ignore further cancellation during cleanup.
-                    }
-                }
-
-                BatchStatusTextBlock.Text = "Batch cancelled.";
-            }
-            finally
-            {
-                _isBatchRunning = false;
-                _batchCts.Dispose();
-                _batchCts = null;
-                SetBatchUiState(false);
-            }
-
-            if (!token.IsCancellationRequested)
-            {
-                if (errors.Count > 0)
-                {
-                    string logPath = Path.Combine(outputFolder, $"batch-errors-{DateTime.Now:yyyyMMdd-HHmmss}.txt");
-                    File.WriteAllLines(logPath, errors);
-
-                    MessageBox.Show(
-                        $"Batch complete with {errors.Count} error(s). See log: {logPath}",
-                        "Batch Processing",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
-                }
-                else
-                {
-                    string skippedNote = skippedRows > 0
-                        ? $" Skipped {skippedRows} empty row(s)."
-                        : string.Empty;
-                    MessageBox.Show(
-                        $"Batch complete. Generated {items.Count} file(s).{skippedNote}",
-                        "Batch Processing",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
-                }
-            }
-        }
-
-        private void GenerateAndSaveBatchItem(BatchItem item, BatchRenderSettings settings, string outputFolder, bool outputSvg)
-        {
-            string extension = outputSvg ? ".svg" : ".png";
-            string outputPath = Path.Combine(outputFolder, item.FileName + extension);
-
-            if (outputSvg)
-            {
-                string svg = _qrService.GenerateCustomQrCodeSvg(
-                    item.Data,
-                    settings.Foreground,
-                    settings.Foreground2,
-                    settings.UseGradient,
-                    settings.Background,
-                    settings.Finder,
-                    settings.InnerEye,
-                    settings.ModuleShape,
-                    settings.EyeShape,
-                    settings.LogoPath,
-                    settings.LogoSizePercent,
-                    settings.AddLogoBackground);
-
-                File.WriteAllText(outputPath, svg);
-                return;
-            }
-
-            using Bitmap? bitmap = _qrService.GenerateCustomQrCode(
-                item.Data,
-                settings.Foreground,
-                settings.Foreground2,
-                settings.UseGradient,
-                settings.Background,
-                settings.Finder,
-                settings.InnerEye,
-                settings.ModuleShape,
-                settings.EyeShape,
-                settings.LogoPath,
-                settings.LogoSizePercent,
-                settings.AddLogoBackground);
-
-            if (bitmap == null)
-                throw new InvalidOperationException("QR generation returned an empty image.");
-
-            bitmap.Save(outputPath, ImageFormat.Png);
-        }
-
         private BatchRenderSettings CaptureBatchRenderSettings()
         {
-            return new BatchRenderSettings
-            {
-                Foreground = FgColorRow.SelectedColor,
-                Foreground2 = FgColor2Row.SelectedColor,
-                Background = BgColorRow.SelectedColor,
-                Finder = FinderColorRow.SelectedColor,
-                InnerEye = InnerEyeColorRow.SelectedColor,
-                UseGradient = UseGradientCheckBox.IsChecked == true,
-                ModuleShape = (ShapeComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Squares",
-                EyeShape = (EyeShapeComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Square",
-                LogoSizePercent = (int)LogoSizeSlider.Value,
-                AddLogoBackground = LogoBackgroundCheckBox.IsChecked == true,
-                LogoPath = LogoPathTextBox.Text
-            };
-        }
-
-        private List<BatchItem> BuildBatchItems(string csvPath, out int skippedRows)
-        {
-            string csvText = File.ReadAllText(csvPath);
-            List<string[]> records = ParseCsvRecords(csvText);
-            skippedRows = 0;
-
-            if (records.Count == 0)
-                return new List<BatchItem>();
-
-            string[] firstRow = records[0];
-            bool hasHeader = LooksLikeHeader(firstRow);
-            int maxColumns = records.Max(r => r.Length);
-            string[] headers = hasHeader ? firstRow : BuildDefaultHeaders(maxColumns);
-            int dataIndex = FindColumnIndex(headers, DataHeaderNames);
-            int nameIndex = FindColumnIndex(headers, FileHeaderNames);
-            int startRow = hasHeader ? 1 : 0;
-
-            if (dataIndex < 0)
-                dataIndex = 0;
-
-            var items = new List<BatchItem>();
-            var usedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            for (int i = startRow; i < records.Count; i++)
-            {
-                string[] row = records[i];
-                string data = GetField(row, dataIndex).Trim();
-                if (string.IsNullOrWhiteSpace(data))
-                {
-                    skippedRows++;
-                    continue;
-                }
-
-                string rawName = nameIndex >= 0 ? GetField(row, nameIndex).Trim() : string.Empty;
-                string fileName = BuildUniqueFileName(rawName, i + 1, usedNames);
-                items.Add(new BatchItem(data, fileName, i + 1));
-            }
-
-            return items;
-        }
-
-        private static List<string[]> ParseCsvRecords(string csvText)
-        {
-            var records = new List<string[]>();
-            var fields = new List<string>();
-            var field = new StringBuilder();
-            bool inQuotes = false;
-
-            for (int i = 0; i < csvText.Length; i++)
-            {
-                char c = csvText[i];
-
-                if (inQuotes)
-                {
-                    if (c == '"')
-                    {
-                        bool escaped = i + 1 < csvText.Length && csvText[i + 1] == '"';
-                        if (escaped)
-                        {
-                            field.Append('"');
-                            i++;
-                        }
-                        else
-                        {
-                            inQuotes = false;
-                        }
-                    }
-                    else
-                    {
-                        field.Append(c);
-                    }
-
-                    continue;
-                }
-
-                if (c == '"')
-                {
-                    inQuotes = true;
-                    continue;
-                }
-
-                if (c == ',')
-                {
-                    fields.Add(field.ToString());
-                    field.Clear();
-                    continue;
-                }
-
-                if (c == '\r' || c == '\n')
-                {
-                    if (c == '\r' && i + 1 < csvText.Length && csvText[i + 1] == '\n')
-                        i++;
-
-                    fields.Add(field.ToString());
-                    field.Clear();
-
-                    if (fields.Count > 1 || !string.IsNullOrWhiteSpace(fields[0]))
-                        records.Add(fields.ToArray());
-
-                    fields.Clear();
-                    continue;
-                }
-
-                field.Append(c);
-            }
-
-            fields.Add(field.ToString());
-            if (fields.Count > 1 || !string.IsNullOrWhiteSpace(fields[0]))
-                records.Add(fields.ToArray());
-
-            return records;
-        }
-
-        private static bool LooksLikeHeader(IReadOnlyList<string> row)
-        {
-            foreach (string cell in row)
-            {
-                string normalized = NormalizeHeader(cell);
-                if (DataHeaderNames.Contains(normalized) || FileHeaderNames.Contains(normalized))
-                    return true;
-            }
-
-            return false;
-        }
-
-        private static int FindColumnIndex(IReadOnlyList<string> headers, HashSet<string> candidates)
-        {
-            for (int i = 0; i < headers.Count; i++)
-            {
-                string normalized = NormalizeHeader(headers[i]);
-                if (candidates.Contains(normalized))
-                    return i;
-            }
-
-            return -1;
-        }
-
-        private static string[] BuildDefaultHeaders(int count)
-        {
-            int columns = Math.Max(1, count);
-            var headers = new string[columns];
-            for (int i = 0; i < columns; i++)
-                headers[i] = $"Column{i + 1}";
-            return headers;
-        }
-
-        private static string GetField(IReadOnlyList<string> row, int index)
-        {
-            if (index < 0 || index >= row.Count)
-                return string.Empty;
-
-            return row[index] ?? string.Empty;
-        }
-
-        private static string BuildUniqueFileName(string rawName, int rowNumber, HashSet<string> usedNames)
-        {
-            string baseName = string.IsNullOrWhiteSpace(rawName)
-                ? $"qr_{rowNumber:0000}"
-                : SanitizeFileName(rawName);
-
-            if (string.IsNullOrWhiteSpace(baseName))
-                baseName = $"qr_{rowNumber:0000}";
-
-            string candidate = baseName;
-            int suffix = 2;
-
-            while (!usedNames.Add(candidate))
-            {
-                candidate = $"{baseName}-{suffix}";
-                suffix++;
-            }
-
-            return candidate;
-        }
-
-        private static string SanitizeFileName(string name)
-        {
-            if (string.IsNullOrWhiteSpace(name))
-                return string.Empty;
-
-            char[] invalid = Path.GetInvalidFileNameChars();
-            var builder = new StringBuilder(name.Length);
-
-            foreach (char c in name)
-                builder.Append(invalid.Contains(c) ? '_' : c);
-
-            return builder.ToString().Trim();
-        }
-
-        private static string NormalizeHeader(string? header)
-        {
-            if (string.IsNullOrWhiteSpace(header))
-                return string.Empty;
-
-            string normalized = header.Trim();
-            normalized = normalized.Replace(" ", string.Empty, StringComparison.Ordinal);
-            normalized = normalized.Replace("_", string.Empty, StringComparison.Ordinal);
-            normalized = normalized.Replace("-", string.Empty, StringComparison.Ordinal);
-            return normalized;
-        }
-
-        private void UpdateBatchProgress(BatchProgress progress)
-        {
-            if (progress.Total <= 0)
-                return;
-
-            double percent = progress.Completed * 100d / progress.Total;
-            BatchProgressBar.Value = percent;
-
-            if (progress.Errors > 0)
-                BatchStatusTextBlock.Text = $"{progress.Completed} / {progress.Total} (Errors: {progress.Errors})";
-            else
-                BatchStatusTextBlock.Text = $"{progress.Completed} / {progress.Total}";
-        }
-
-        private void SetBatchUiState(bool isRunning)
-        {
-            BatchStartButton.IsEnabled = !isRunning;
-            BatchCancelButton.IsEnabled = isRunning;
-            BatchBrowseCsvButton.IsEnabled = !isRunning;
-            BatchBrowseOutputButton.IsEnabled = !isRunning;
-            BatchOutputFormatComboBox.IsEnabled = !isRunning;
-            BatchCsvPathTextBox.IsEnabled = !isRunning;
-            BatchOutputFolderTextBox.IsEnabled = !isRunning;
+            return new BatchRenderSettings(
+                Foreground: FgColorRow.SelectedColor,
+                Foreground2: FgColor2Row.SelectedColor,
+                Background: BgColorRow.SelectedColor,
+                Finder: FinderColorRow.SelectedColor,
+                InnerEye: InnerEyeColorRow.SelectedColor,
+                UseGradient: UseGradientCheckBox.IsChecked == true,
+                ModuleShape: (ShapeComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Squares",
+                EyeShape: (EyeShapeComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Square",
+                LogoPath: LogoPathTextBox.Text,
+                LogoSizePercent: (int)LogoSizeSlider.Value,
+                AddLogoBackground: LogoBackgroundCheckBox.IsChecked == true);
         }
 
         // ── Presets ─────────────────────────────────────────────────────────
 
         private void PresetComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            PresetLoadButton.IsEnabled = PresetComboBox.SelectedItem is PresetInfo;
+            bool hasSelection = PresetComboBox.SelectedItem is PresetInfo;
+            PresetLoadButton.IsEnabled = hasSelection;
+            if (PresetDeleteButton != null)
+                PresetDeleteButton.IsEnabled = hasSelection;
+        }
+
+        private void PresetDeleteButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (PresetComboBox.SelectedItem is not PresetInfo info)
+                return;
+
+            MessageBoxResult result = MessageBox.Show(
+                $"Are you sure you want to delete the preset '{info.Name}'?",
+                "Delete Preset",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                try
+                {
+                    _presetStorage.DeletePreset(info.FilePath);
+                    RefreshPresetList(selectNewest: true);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Unable to delete preset: {ex.Message}", "Delete Preset",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
         }
 
         private void PresetSaveButton_Click(object sender, RoutedEventArgs e)
