@@ -3,7 +3,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using MaterialDesignThemes.Wpf;
 
 namespace CortexQR.Views
 {
@@ -53,6 +52,10 @@ namespace CortexQR.Views
 
         // ── Events ────────────────────────────────────────────────────────────
         public event EventHandler? ColorChanged;
+
+        // ── Last picker position (shared across all ColorRow instances) ──────
+        private static double _savedLeft = double.NaN;
+        private static double _savedTop  = double.NaN;
 
         // ── Constructor ───────────────────────────────────────────────────────
         public ColorRow()
@@ -105,25 +108,48 @@ namespace CortexQR.Views
         }
 
         // ── Swatch Button ─────────────────────────────────────────────────────
-        private async void SwatchBtn_Click(object sender, RoutedEventArgs e)
+        private void SwatchBtn_Click(object sender, RoutedEventArgs e)
         {
-            var picker = new ColorPickerPopup
+            var picker = new ColorPickerPopup { SelectedColor = SelectedColor };
+
+            var win = new Window
             {
-                SelectedColor = SelectedColor
+                Content               = picker,
+                WindowStyle           = WindowStyle.None,
+                AllowsTransparency    = true,
+                Background            = Brushes.Transparent,
+                SizeToContent         = SizeToContent.WidthAndHeight,
+                ResizeMode            = ResizeMode.NoResize,
+                Topmost               = true,
+                ShowInTaskbar         = false,
+                Owner                 = Window.GetWindow(this),
+                WindowStartupLocation = double.IsNaN(_savedLeft)
+                    ? WindowStartupLocation.CenterOwner
+                    : WindowStartupLocation.Manual,
             };
+
+            if (!double.IsNaN(_savedLeft))
+            {
+                win.Left = _savedLeft;
+                win.Top  = _savedTop;
+            }
 
             picker.ColorApplied += (_, color) =>
             {
+                _savedLeft = win.Left;
+                _savedTop  = win.Top;
                 ApplyColor(color);
-                DialogHost.CloseDialogCommand.Execute(null, picker);
+                win.Close();
             };
 
             picker.Cancelled += (_, _) =>
             {
-                DialogHost.CloseDialogCommand.Execute(null, picker);
+                _savedLeft = win.Left;
+                _savedTop  = win.Top;
+                win.Close();
             };
 
-            await DialogHost.Show(picker, "RootDialog");
+            win.ShowDialog();
         }
 
         // ── Hex TextBox ───────────────────────────────────────────────────────

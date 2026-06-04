@@ -112,6 +112,13 @@ namespace CortexQR.Views
             System.Windows.Controls.Canvas.SetTop(SvCrosshair, cy);
         }
 
+        // ── Title Bar Drag ────────────────────────────────────────────────────
+        private void TitleBar_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.LeftButton == MouseButtonState.Pressed)
+                Window.GetWindow(this)?.DragMove();
+        }
+
         // ── SV Canvas Mouse ───────────────────────────────────────────────────
         private void SvCanvas_MouseDown(object sender, MouseButtonEventArgs e)
         {

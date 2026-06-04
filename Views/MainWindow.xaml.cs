@@ -87,6 +87,38 @@ namespace CortexQR.Views
             }
         }
 
+        private void ClearLogoButton_Click(object sender, RoutedEventArgs e)
+        {
+            LogoPathTextBox.Clear();
+            SaveConfig(string.Empty);
+        }
+
+        private void LogoPath_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+            SettingChanged(sender, e);
+            UpdateLogoDisplay();
+        }
+
+        private void UpdateLogoDisplay()
+        {
+            if (LogoFileNameDisplay == null || LogoFileIcon == null) return;
+
+            string path = LogoPathTextBox.Text;
+            bool hasFile = !string.IsNullOrEmpty(path) && File.Exists(path);
+
+            LogoFileNameDisplay.Text = hasFile
+                ? System.IO.Path.GetFileName(path)
+                : "No file selected";
+
+            LogoFileNameDisplay.Foreground = hasFile
+                ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xB8, 0xD8, 0xFF))
+                : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x2E, 0x42, 0x60));
+
+            LogoFileIcon.Foreground = hasFile
+                ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x0A, 0x84, 0xFF))
+                : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x2A, 0x40, 0x60));
+        }
+
         // Handles TextBox / Slider / ComboBox / CheckBox changes
         private void SettingChanged(object sender, RoutedEventArgs e)
         {
@@ -708,56 +740,229 @@ namespace CortexQR.Views
 
         private string? PromptForPresetName(string? defaultName)
         {
+            var wm = System.Windows.Media.ColorConverter.ConvertFromString;
+
+            System.Windows.Media.Color hex(string h) =>
+                (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(h)!;
+
+            // ── TextBox ──────────────────────────────────────────────────────
             var textBox = new TextBox
             {
-                Text = defaultName ?? string.Empty,
-                MinWidth = 240
+                Text                  = defaultName ?? string.Empty,
+                MinWidth              = 260,
+                FontSize              = 13,
+                FontFamily            = new System.Windows.Media.FontFamily("Consolas"),
+                Padding               = new Thickness(10, 8, 10, 8),
+                Background            = new System.Windows.Media.SolidColorBrush(hex("#0A1020")),
+                Foreground            = new System.Windows.Media.SolidColorBrush(hex("#7AAAD8")),
+                CaretBrush            = new System.Windows.Media.SolidColorBrush(hex("#0A84FF")),
+                BorderBrush           = new System.Windows.Media.SolidColorBrush(hex("#1E3050")),
+                BorderThickness       = new Thickness(1),
+                SelectionBrush        = new System.Windows.Media.SolidColorBrush(hex("#0A84FF")) { Opacity = 0.4 },
             };
+
+            // ── Save Button ──────────────────────────────────────────────────
+            var saveGrad = new System.Windows.Media.LinearGradientBrush
+            {
+                StartPoint = new System.Windows.Point(0, 0),
+                EndPoint   = new System.Windows.Point(1, 0),
+            };
+            saveGrad.GradientStops.Add(new System.Windows.Media.GradientStop(hex("#0A84FF"), 0));
+            saveGrad.GradientStops.Add(new System.Windows.Media.GradientStop(hex("#06B6D4"), 1));
 
             var saveButton = new Button
             {
-                Content = "Save",
-                MinWidth = 80,
-                IsDefault = true
+                Content         = "SAVE",
+                MinWidth        = 90,
+                Height          = 32,
+                FontWeight      = FontWeights.Bold,
+                FontSize        = 11,
+                Background      = saveGrad,
+                Foreground      = System.Windows.Media.Brushes.White,
+                BorderThickness = new Thickness(0),
+                Cursor          = Cursors.Hand,
+                IsDefault       = true,
             };
 
+            // ── Cancel Button ────────────────────────────────────────────────
             var cancelButton = new Button
             {
-                Content = "Cancel",
-                MinWidth = 80,
-                IsCancel = true,
-                Margin = new Thickness(8, 0, 0, 0)
+                Content         = "CANCEL",
+                MinWidth        = 90,
+                Height          = 32,
+                FontSize        = 11,
+                Background      = new System.Windows.Media.SolidColorBrush(hex("#0F1520")),
+                Foreground      = new System.Windows.Media.SolidColorBrush(hex("#3A5070")),
+                BorderBrush     = new System.Windows.Media.SolidColorBrush(hex("#1E3050")),
+                BorderThickness = new Thickness(1),
+                Cursor          = Cursors.Hand,
+                Margin          = new Thickness(8, 0, 0, 0),
+                IsCancel        = true,
             };
 
             var buttons = new StackPanel
             {
-                Orientation = Orientation.Horizontal,
+                Orientation         = Orientation.Horizontal,
                 HorizontalAlignment = HorizontalAlignment.Right,
-                Margin = new Thickness(0, 12, 0, 0)
+                Margin              = new Thickness(0, 14, 0, 0),
             };
             buttons.Children.Add(saveButton);
             buttons.Children.Add(cancelButton);
 
-            var panel = new StackPanel
+            // ── Label ────────────────────────────────────────────────────────
+            var label = new TextBlock
             {
-                Margin = new Thickness(16)
+                Text       = "Preset name",
+                FontSize   = 10,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = new System.Windows.Media.SolidColorBrush(hex("#5A7AA8")),
+                Margin     = new Thickness(0, 0, 0, 8),
             };
-            panel.Children.Add(new TextBlock
-            {
-                Text = "Preset name",
-                Margin = new Thickness(0, 0, 0, 8)
-            });
-            panel.Children.Add(textBox);
-            panel.Children.Add(buttons);
 
+            var contentPanel = new StackPanel { Margin = new Thickness(16) };
+            contentPanel.Children.Add(label);
+            contentPanel.Children.Add(textBox);
+            contentPanel.Children.Add(buttons);
+
+            // ── Title Bar accent line ────────────────────────────────────────
+            var accentBrush = new System.Windows.Media.LinearGradientBrush
+            {
+                StartPoint = new System.Windows.Point(0, 0.5),
+                EndPoint   = new System.Windows.Point(1, 0.5),
+            };
+            accentBrush.GradientStops.Add(new System.Windows.Media.GradientStop(System.Windows.Media.Colors.Transparent, 0));
+            accentBrush.GradientStops.Add(new System.Windows.Media.GradientStop(hex("#0A84FF"), 0.35));
+            accentBrush.GradientStops.Add(new System.Windows.Media.GradientStop(hex("#06B6D4"), 0.65));
+            accentBrush.GradientStops.Add(new System.Windows.Media.GradientStop(System.Windows.Media.Colors.Transparent, 1));
+
+            var accentLine = new Border
+            {
+                Height        = 2,
+                CornerRadius  = new CornerRadius(12, 12, 0, 0),
+                Background    = accentBrush,
+                Effect        = new System.Windows.Media.Effects.DropShadowEffect
+                {
+                    Color       = hex("#2563EB"),
+                    BlurRadius  = 10,
+                    ShadowDepth = 0,
+                    Opacity     = 0.8,
+                },
+            };
+
+            // ── Title Bar icon + text ────────────────────────────────────────
+            var iconBg = new System.Windows.Media.LinearGradientBrush
+            {
+                StartPoint = new System.Windows.Point(0, 0),
+                EndPoint   = new System.Windows.Point(1, 1),
+            };
+            iconBg.GradientStops.Add(new System.Windows.Media.GradientStop(hex("#0A84FF"), 0));
+            iconBg.GradientStops.Add(new System.Windows.Media.GradientStop(hex("#06B6D4"), 1));
+
+            var iconBorder = new Border
+            {
+                Width        = 18,
+                Height       = 18,
+                CornerRadius = new CornerRadius(5),
+                Background   = iconBg,
+                Child        = new TextBlock
+                {
+                    Text                = "★",
+                    FontSize            = 9,
+                    Foreground          = System.Windows.Media.Brushes.White,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment   = VerticalAlignment.Center,
+                },
+            };
+
+            var titleText = new TextBlock
+            {
+                Text              = "SAVE PRESET",
+                FontSize          = 9,
+                FontWeight        = FontWeights.Bold,
+                Foreground        = new System.Windows.Media.SolidColorBrush(hex("#5A7AA8")),
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin            = new Thickness(8, 0, 0, 0),
+            };
+
+            var titleContent = new StackPanel
+            {
+                Orientation       = Orientation.Horizontal,
+                VerticalAlignment = VerticalAlignment.Center,
+                Height            = 36,
+                Margin            = new Thickness(14, 0, 14, 0),
+            };
+            titleContent.Children.Add(iconBorder);
+            titleContent.Children.Add(titleText);
+
+            var titleBarGrid = new Grid();
+            titleBarGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(2) });
+            titleBarGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            Grid.SetRow(accentLine, 0);
+            Grid.SetRow(titleContent, 1);
+            titleBarGrid.Children.Add(accentLine);
+            titleBarGrid.Children.Add(titleContent);
+
+            var titleBar = new Border
+            {
+                CornerRadius = new CornerRadius(12, 12, 0, 0),
+                Background   = new System.Windows.Media.SolidColorBrush(hex("#0A1020")),
+                Cursor       = Cursors.SizeAll,
+                Child        = titleBarGrid,
+            };
+
+            // ── Divider ──────────────────────────────────────────────────────
+            var divider = new Border
+            {
+                Height     = 1,
+                Background = new System.Windows.Media.SolidColorBrush(hex("#1E3050")),
+            };
+
+            // ── Outer layout ─────────────────────────────────────────────────
+            var mainGrid = new Grid();
+            mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            mainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1) });
+            mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            Grid.SetRow(titleBar,     0);
+            Grid.SetRow(divider,      1);
+            Grid.SetRow(contentPanel, 2);
+            mainGrid.Children.Add(titleBar);
+            mainGrid.Children.Add(divider);
+            mainGrid.Children.Add(contentPanel);
+
+            var outerBorder = new Border
+            {
+                Background      = new System.Windows.Media.SolidColorBrush(hex("#0F1520")),
+                CornerRadius    = new CornerRadius(12),
+                BorderBrush     = new System.Windows.Media.SolidColorBrush(hex("#1E3050")),
+                BorderThickness = new Thickness(1),
+                Effect          = new System.Windows.Media.Effects.DropShadowEffect
+                {
+                    Color       = hex("#0A84FF"),
+                    BlurRadius  = 40,
+                    ShadowDepth = 0,
+                    Opacity     = 0.22,
+                },
+                Child = mainGrid,
+            };
+
+            // ── Window ───────────────────────────────────────────────────────
             var dialog = new Window
             {
-                Title = "Save Preset",
-                Content = panel,
-                SizeToContent = SizeToContent.WidthAndHeight,
+                Content               = outerBorder,
+                WindowStyle           = WindowStyle.None,
+                AllowsTransparency    = true,
+                Background            = System.Windows.Media.Brushes.Transparent,
+                SizeToContent         = SizeToContent.WidthAndHeight,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                ResizeMode = ResizeMode.NoResize,
-                Owner = this
+                ResizeMode            = ResizeMode.NoResize,
+                ShowInTaskbar         = false,
+                Owner                 = this,
+            };
+
+            titleBar.MouseLeftButtonDown += (_, e) =>
+            {
+                if (e.LeftButton == MouseButtonState.Pressed)
+                    dialog.DragMove();
             };
 
             string? result = null;
