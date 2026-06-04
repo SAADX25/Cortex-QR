@@ -332,7 +332,6 @@
                                                                    Style="{StaticResource FieldLabelStyle}"/>
                                                         <ComboBox x:Name="WifiAuthComboBox"
                                                                   Style="{StaticResource ModernComboBoxStyle}"
-                                                                  materialDesign:HintAssist.IsFloating="False"
                                                                   SelectedIndex="1"
                                                                   Margin="0,0,0,10"
                                                                   SelectionChanged="SettingChanged">
@@ -611,7 +610,6 @@
                                                        Style="{StaticResource FieldLabelStyle}"/>
                                             <ComboBox x:Name="EyeShapeComboBox"
                                                       Style="{StaticResource ModernComboBoxStyle}"
-                                                      materialDesign:HintAssist.IsFloating="False"
                                                       SelectedIndex="0"
                                                       Margin="0,0,0,10"
                                                       SelectionChanged="SettingChanged">
@@ -627,7 +625,6 @@
                                                        Style="{StaticResource FieldLabelStyle}"/>
                                             <ComboBox x:Name="ShapeComboBox"
                                                       Style="{StaticResource ModernComboBoxStyle}"
-                                                      materialDesign:HintAssist.IsFloating="False"
                                                       SelectedIndex="0"
                                                       SelectionChanged="SettingChanged">
                                                 <ComboBoxItem Content="Squares"/>
@@ -767,7 +764,6 @@
                                                        Style="{StaticResource FieldLabelStyle}"/>
                                             <ComboBox x:Name="BatchOutputFormatComboBox"
                                                       Style="{StaticResource ModernComboBoxStyle}"
-                                                      materialDesign:HintAssist.IsFloating="False"
                                                       ItemsSource="{Binding OutputFormats}"
                                                       SelectedItem="{Binding SelectedOutputFormat, Mode=TwoWay}"
                                                       Margin="0,0,0,14"/>
