@@ -86,9 +86,6 @@
                                     <Run Text="CORTEX " Foreground="{StaticResource TextPrimaryBrush}"/>
                                     <Run Foreground="{StaticResource AccentBrush}">QR</Run>
                                 </TextBlock>
-                                <TextBlock Text="Professional QR Studio"
-                                           FontSize="10"
-                                           Foreground="{StaticResource TextMutedBrush}"/>
                             </StackPanel>
                         </StackPanel>
 
@@ -146,21 +143,18 @@
                                         </LinearGradientBrush>
                                     </Border.Background>
                                 </Border>
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <Ellipse Width="6" Height="6" VerticalAlignment="Center" Margin="0,0,6,0">
-                                        <Ellipse.Fill>
-                                            <SolidColorBrush Color="#10B981"/>
-                                        </Ellipse.Fill>
-                                        <Ellipse.Effect>
-                                            <DropShadowEffect Color="#10B981" BlurRadius="6"
-                                                              ShadowDepth="0" Opacity="0.9"/>
-                                        </Ellipse.Effect>
-                                    </Ellipse>
-                                    <TextBlock Text="v1.0  ·  Ready"
-                                               FontSize="10"
-                                               Foreground="{StaticResource TextMutedBrush}"
+                                <Border HorizontalAlignment="Center"
+                                        CornerRadius="8"
+                                        Padding="10,5"
+                                        Background="{StaticResource AccentSubtleBrush}"
+                                        BorderBrush="{StaticResource BorderSubtleBrush}"
+                                        BorderThickness="1">
+                                    <TextBlock Text="V1.0.0"
+                                               FontSize="10.5"
+                                               FontWeight="SemiBold"
+                                               Foreground="{StaticResource TextSecondaryBrush}"
                                                VerticalAlignment="Center"/>
-                                </StackPanel>
+                                </Border>
                             </StackPanel>
 
                             <!-- Navigation -->
