@@ -134,13 +134,13 @@ namespace CortexQR.ViewModels
 
             if (string.IsNullOrWhiteSpace(CsvPath) || !File.Exists(CsvPath))
             {
-                _messageService.ShowWarning("Please select a valid CSV file.", "Batch Processing");
+                _messageService.ShowWarning("Choose a valid CSV file before starting batch processing.", "Batch Processing");
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(OutputFolder))
             {
-                _messageService.ShowWarning("Please select an output folder.", "Batch Processing");
+                _messageService.ShowWarning("Choose an output folder before starting batch processing.", "Batch Processing");
                 return;
             }
 
