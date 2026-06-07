@@ -6,7 +6,7 @@
              x:Name="Root">
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="110"/>
+            <ColumnDefinition Width="100"/>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
@@ -16,7 +16,8 @@
                    Text="{Binding Label, ElementName=Root}"
                    VerticalAlignment="Center"
                    FontSize="12"
-                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                   Foreground="{StaticResource TextSecondaryBrush}"
+                   TextTrimming="CharacterEllipsis"/>
 
         <!-- Hex TextBox -->
         <TextBox x:Name="HexBox"
@@ -24,13 +25,20 @@
                  Style="{StaticResource ModernTextBoxStyle}"
                  FontFamily="Consolas"
                  FontSize="13"
+                 MinWidth="94"
+                 Padding="10,0"
+                 HorizontalContentAlignment="Center"
                  KeyDown="HexBox_KeyDown"
                  LostFocus="HexBox_LostFocus"/>
 
         <!-- Color Swatch Button -->
-        <Grid Grid.Column="2" Margin="10,0,0,0">
+        <Grid Grid.Column="2"
+              Width="40"
+              Margin="8,0,0,0"
+              HorizontalAlignment="Right">
             <Button x:Name="SwatchBtn"
                     Style="{StaticResource ColorSwatchButton}"
+                    HorizontalAlignment="Right"
                     Background="{Binding SelectedBrush, ElementName=Root}"
                     Click="SwatchBtn_Click"
                     Cursor="Hand"/>

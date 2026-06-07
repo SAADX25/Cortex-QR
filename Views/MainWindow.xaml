@@ -257,7 +257,7 @@
                     <!-- ── CONTENT AREA ──────────────────────────── -->
                     <Grid Grid.Column="2">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="330" MinWidth="260" MaxWidth="560"/>
+                            <ColumnDefinition Width="330" MinWidth="330" MaxWidth="560"/>
                             <ColumnDefinition Width="5"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
