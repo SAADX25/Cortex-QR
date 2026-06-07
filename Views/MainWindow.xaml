@@ -62,23 +62,21 @@
 
                         <!-- Logo + App Name -->
                         <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                            <!-- Icon with gradient bg -->
-                            <Border Width="32" Height="32" CornerRadius="9" Margin="0,0,11,0">
-                                <Border.Background>
-                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                        <GradientStop Color="#0A84FF" Offset="0"/>
-                                        <GradientStop Color="#06B6D4" Offset="1"/>
-                                    </LinearGradientBrush>
-                                </Border.Background>
-                                <Border.Effect>
-                                    <DropShadowEffect Color="#0A84FF" BlurRadius="12"
-                                                      ShadowDepth="0" Opacity="0.6"/>
-                                </Border.Effect>
-                                <materialDesign:PackIcon Kind="QrCode"
-                                                         Width="18" Height="18"
-                                                         HorizontalAlignment="Center"
-                                                         VerticalAlignment="Center"
-                                                         Foreground="White"/>
+                            <!-- Brand logo -->
+                            <Border Width="42" Height="42" Margin="0,0,10,0">
+                                <Grid>
+                                    <Image x:Name="TitleLogoImage"
+                                           Width="40" Height="40"
+                                           Stretch="Uniform"
+                                           Visibility="Collapsed"
+                                           RenderOptions.BitmapScalingMode="HighQuality"/>
+                                    <materialDesign:PackIcon x:Name="TitleLogoFallback"
+                                                             Kind="QrCode"
+                                                             Width="24" Height="24"
+                                                             HorizontalAlignment="Center"
+                                                             VerticalAlignment="Center"
+                                                             Foreground="{StaticResource AccentBrush}"/>
+                                </Grid>
                             </Border>
                             <StackPanel VerticalAlignment="Center">
                                 <TextBlock FontSize="13"

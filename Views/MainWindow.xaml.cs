@@ -7,6 +7,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 using CortexQR.Models;
 using CortexQR.Services;
@@ -30,6 +31,7 @@ namespace CortexQR.Views
         public MainWindow()
         {
             InitializeComponent();
+            LoadBrandAssets();
             _qrService = new QrGenerationService();
             _presetStorage = new PresetStorage();
             var fileDialogs = new FileDialogService();
@@ -49,6 +51,52 @@ namespace CortexQR.Views
         {
             base.OnClosed(e);
             DisposeBitmap();
+        }
+
+        private void LoadBrandAssets()
+        {
+            try
+            {
+                string brandDirectory = Path.Combine(AppContext.BaseDirectory, "Assets", "Brand");
+
+                string? logoPath = FindFirstExisting(brandDirectory, "LOGO.ICO", "logo.ico");
+                if (logoPath != null)
+                {
+                    BitmapImage logoImage = LoadBitmapImage(logoPath);
+                    TitleLogoImage.Source = logoImage;
+                    TitleLogoImage.Visibility = Visibility.Visible;
+                    TitleLogoFallback.Visibility = Visibility.Collapsed;
+                    Icon = logoImage;
+                }
+            }
+            catch
+            {
+                TitleLogoImage.Visibility = Visibility.Collapsed;
+                TitleLogoFallback.Visibility = Visibility.Visible;
+            }
+        }
+
+        private static string? FindFirstExisting(string directory, params string[] fileNames)
+        {
+            foreach (string fileName in fileNames)
+            {
+                string path = Path.Combine(directory, fileName);
+                if (File.Exists(path))
+                    return path;
+            }
+
+            return null;
+        }
+
+        private static BitmapImage LoadBitmapImage(string path)
+        {
+            var image = new BitmapImage();
+            image.BeginInit();
+            image.CacheOption = BitmapCacheOption.OnLoad;
+            image.UriSource = new Uri(path, UriKind.Absolute);
+            image.EndInit();
+            image.Freeze();
+            return image;
         }
 
         // ── Config Persistence ────────────────────────────────────────────────
