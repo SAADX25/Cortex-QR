@@ -12,6 +12,7 @@ using CortexQR.Models;
 using CortexQR.Services;
 using CortexQR.Helpers;
 using CortexQR.ViewModels;
+using MaterialDesignThemes.Wpf;
 using QRCoder;
 
 namespace CortexQR.Views
@@ -34,7 +35,7 @@ namespace CortexQR.Views
             var fileDialogs = new FileDialogService();
             var messageDialogs = new MessageDialogService();
             _batchViewModel = new BatchProcessingViewModel(_qrService, fileDialogs, messageDialogs, CaptureBatchRenderSettings);
-            PresetComboBox.ItemsSource = _presetItems;
+            PresetListBox.ItemsSource = _presetItems;
             LoadConfig();
             RefreshPresetList(selectNewest: false);
 
@@ -391,7 +392,7 @@ namespace CortexQR.Views
 
         // Save
 
-        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             if (_currentQrBitmap == null)
             {
@@ -416,8 +417,7 @@ namespace CortexQR.Views
                 else
                     _currentQrBitmap.Save(dlg.FileName, System.Drawing.Imaging.ImageFormat.Jpeg);
 
-                MessageBox.Show("QR Code saved successfully!", "Success",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
+                await ShowSuccessDialogAsync("QR code saved");
             }
             catch (Exception ex)
             {
@@ -428,7 +428,7 @@ namespace CortexQR.Views
 
         // ── Helpers ───────────────────────────────────────────────────────────
 
-        private void ExportSvgButton_Click(object sender, RoutedEventArgs e)
+        private async void ExportSvgButton_Click(object sender, RoutedEventArgs e)
         {
             string data = BuildPayload();
             if (string.IsNullOrWhiteSpace(data))
@@ -478,8 +478,7 @@ namespace CortexQR.Views
 
                 File.WriteAllText(dlg.FileName, svg);
 
-                MessageBox.Show("SVG exported successfully!", "Success",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
+                await ShowSuccessDialogAsync("SVG exported");
             }
             catch (Exception ex)
             {
@@ -506,26 +505,35 @@ namespace CortexQR.Views
 
         // ── Presets ─────────────────────────────────────────────────────────
 
-        private void PresetComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void PresetListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            bool hasSelection = PresetComboBox.SelectedItem is PresetInfo;
+            bool hasSelection = PresetListBox.SelectedItem is PresetInfo;
             PresetLoadButton.IsEnabled = hasSelection;
-            if (PresetDeleteButton != null)
-                PresetDeleteButton.IsEnabled = hasSelection;
         }
 
-        private void PresetDeleteButton_Click(object sender, RoutedEventArgs e)
+        private async void PresetRecordDeleteButton_Click(object sender, RoutedEventArgs e)
         {
-            if (PresetComboBox.SelectedItem is not PresetInfo info)
+            if (sender is Button { Tag: PresetInfo info })
+                await DeletePresetAsync(info);
+
+            e.Handled = true;
+        }
+
+        private async Task DeletePresetAsync(PresetInfo info)
+        {
+            bool confirmed;
+            try
+            {
+                confirmed = await ConfirmPresetDeleteCompactAsync(info.Name);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Unable to show delete confirmation: {ex.Message}", "Delete Preset",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
+            }
 
-            MessageBoxResult result = MessageBox.Show(
-                $"Are you sure you want to delete the preset '{info.Name}'?",
-                "Delete Preset",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
-
-            if (result == MessageBoxResult.Yes)
+            if (confirmed)
             {
                 try
                 {
@@ -542,7 +550,7 @@ namespace CortexQR.Views
 
         private void PresetSaveButton_Click(object sender, RoutedEventArgs e)
         {
-            string? defaultName = (PresetComboBox.SelectedItem as PresetInfo)?.Name;
+            string? defaultName = (PresetListBox.SelectedItem as PresetInfo)?.Name;
             string? name = PromptForPresetName(defaultName);
             if (string.IsNullOrWhiteSpace(name))
                 return;
@@ -574,7 +582,7 @@ namespace CortexQR.Views
 
         private void PresetLoadButton_Click(object sender, RoutedEventArgs e)
         {
-            if (PresetComboBox.SelectedItem is not PresetInfo info)
+            if (PresetListBox.SelectedItem is not PresetInfo info)
             {
                 MessageBox.Show("Select a preset to load.", "Load Preset",
                     MessageBoxButton.OK, MessageBoxImage.Information);
@@ -595,7 +603,7 @@ namespace CortexQR.Views
 
         private void RefreshPresetList(bool selectNewest)
         {
-            string? previousName = (PresetComboBox.SelectedItem as PresetInfo)?.Name;
+            string? previousName = (PresetListBox.SelectedItem as PresetInfo)?.Name;
             _presetItems.Clear();
 
             foreach (PresetInfo info in _presetStorage.ListPresets())
@@ -603,10 +611,13 @@ namespace CortexQR.Views
 
             if (_presetItems.Count == 0)
             {
-                PresetComboBox.SelectedItem = null;
+                PresetListBox.SelectedItem = null;
                 PresetLoadButton.IsEnabled = false;
+                PresetEmptyText.Visibility = Visibility.Visible;
                 return;
             }
+
+            PresetEmptyText.Visibility = Visibility.Collapsed;
 
             PresetInfo? target = null;
             if (!string.IsNullOrWhiteSpace(previousName))
@@ -616,8 +627,8 @@ namespace CortexQR.Views
             if (target == null && selectNewest)
                 target = _presetItems[0];
 
-            PresetComboBox.SelectedItem = target;
-            PresetLoadButton.IsEnabled = PresetComboBox.SelectedItem is PresetInfo;
+            PresetListBox.SelectedItem = target;
+            PresetLoadButton.IsEnabled = PresetListBox.SelectedItem is PresetInfo;
         }
 
         private void RefreshPresetList(string? selectName)
@@ -635,8 +646,11 @@ namespace CortexQR.Views
             if (target == null && _presetItems.Count > 0)
                 target = _presetItems[0];
 
-            PresetComboBox.SelectedItem = target;
-            PresetLoadButton.IsEnabled = PresetComboBox.SelectedItem is PresetInfo;
+            PresetEmptyText.Visibility = _presetItems.Count == 0
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+            PresetListBox.SelectedItem = target;
+            PresetLoadButton.IsEnabled = PresetListBox.SelectedItem is PresetInfo;
         }
 
         private QrStylePreset BuildPresetFromUi(string name)
@@ -736,6 +750,601 @@ namespace CortexQR.Views
             }
 
             return fallback;
+        }
+
+        private async Task ShowSuccessDialogAsync(string message)
+        {
+            System.Windows.Media.Color hex(string h) =>
+                (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(h)!;
+
+            var accentLine = new Border
+            {
+                Width = 4,
+                CornerRadius = new CornerRadius(4),
+                Background = new System.Windows.Media.SolidColorBrush(hex("#10B981")),
+                Margin = new Thickness(0, 0, 12, 0),
+            };
+
+            var messageText = new TextBlock
+            {
+                Text = message,
+                FontSize = 14,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = new System.Windows.Media.SolidColorBrush(hex("#EEF4FF")),
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+
+            var okButton = new Button
+            {
+                Content = "OK",
+                Width = 86,
+                Height = 34,
+                Style = TryFindResource("PrimaryButtonStyle") as Style,
+                IsDefault = true,
+                Command = DialogHost.CloseDialogCommand,
+            };
+
+            var contentGrid = new Grid();
+            contentGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            contentGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            Grid.SetColumn(accentLine, 0);
+            Grid.SetColumn(messageText, 1);
+            contentGrid.Children.Add(accentLine);
+            contentGrid.Children.Add(messageText);
+
+            var contentPanel = new StackPanel();
+            contentPanel.Children.Add(contentGrid);
+            contentPanel.Children.Add(new Border { Height = 16, Background = System.Windows.Media.Brushes.Transparent });
+            contentPanel.Children.Add(okButton);
+
+            var dialogContent = new Border
+            {
+                Width = 280,
+                Padding = new Thickness(14),
+                Background = new System.Windows.Media.SolidColorBrush(hex("#0F1520")),
+                CornerRadius = new CornerRadius(10),
+                BorderBrush = new System.Windows.Media.SolidColorBrush(hex("#243454")),
+                BorderThickness = new Thickness(1),
+                Effect = new System.Windows.Media.Effects.DropShadowEffect
+                {
+                    Color = hex("#000000"),
+                    BlurRadius = 22,
+                    ShadowDepth = 10,
+                    Opacity = 0.34,
+                },
+                Child = contentPanel,
+            };
+
+            okButton.HorizontalAlignment = HorizontalAlignment.Right;
+            await DialogHost.Show(dialogContent, "RootDialog");
+        }
+
+        private async Task<bool> ConfirmPresetDeleteCompactAsync(string presetName)
+        {
+            System.Windows.Media.Color hex(string h) =>
+                (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(h)!;
+
+            var fileNameText = new TextBlock
+            {
+                Text = presetName,
+                FontSize = 14,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = new System.Windows.Media.SolidColorBrush(hex("#EEF4FF")),
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+
+            var fileNameBox = new Border
+            {
+                CornerRadius = new CornerRadius(8),
+                Padding = new Thickness(12, 9, 12, 9),
+                Background = new System.Windows.Media.SolidColorBrush(hex("#0A1020")),
+                BorderBrush = new System.Windows.Media.SolidColorBrush(hex("#1E3050")),
+                BorderThickness = new Thickness(1),
+                Child = fileNameText,
+            };
+
+            var cancelButton = new Button
+            {
+                Content = "Cancel",
+                Width = 96,
+                Height = 36,
+                Style = TryFindResource("GhostButtonStyle") as Style,
+                IsDefault = true,
+                Command = DialogHost.CloseDialogCommand,
+                CommandParameter = false,
+            };
+
+            var deleteButton = new Button
+            {
+                Content = "Delete",
+                Width = 96,
+                Height = 36,
+                Style = TryFindResource("DangerButtonStyle") as Style,
+                Margin = new Thickness(8, 0, 0, 0),
+                Command = DialogHost.CloseDialogCommand,
+                CommandParameter = true,
+            };
+
+            var buttons = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Margin = new Thickness(0, 14, 0, 0),
+            };
+            buttons.Children.Add(cancelButton);
+            buttons.Children.Add(deleteButton);
+
+            var contentPanel = new StackPanel();
+            contentPanel.Children.Add(fileNameBox);
+            contentPanel.Children.Add(buttons);
+
+            var dialogContent = new Border
+            {
+                Width = 300,
+                Padding = new Thickness(14),
+                Background = new System.Windows.Media.SolidColorBrush(hex("#0F1520")),
+                CornerRadius = new CornerRadius(10),
+                BorderBrush = new System.Windows.Media.SolidColorBrush(hex("#243454")),
+                BorderThickness = new Thickness(1),
+                Effect = new System.Windows.Media.Effects.DropShadowEffect
+                {
+                    Color = hex("#000000"),
+                    BlurRadius = 22,
+                    ShadowDepth = 10,
+                    Opacity = 0.34,
+                },
+                Child = contentPanel,
+            };
+
+            object? result = await DialogHost.Show(dialogContent, "RootDialog");
+            return result is bool confirmed && confirmed;
+        }
+
+        private async Task<bool> ConfirmPresetDeleteAsync(string presetName)
+        {
+            System.Windows.Media.Color hex(string h) =>
+                (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(h)!;
+
+            var accentBrush = new System.Windows.Media.LinearGradientBrush
+            {
+                StartPoint = new System.Windows.Point(0, 0.5),
+                EndPoint = new System.Windows.Point(1, 0.5),
+            };
+            accentBrush.GradientStops.Add(new System.Windows.Media.GradientStop(System.Windows.Media.Colors.Transparent, 0));
+            accentBrush.GradientStops.Add(new System.Windows.Media.GradientStop(hex("#F43F5E"), 0.28));
+            accentBrush.GradientStops.Add(new System.Windows.Media.GradientStop(hex("#0A84FF"), 0.72));
+            accentBrush.GradientStops.Add(new System.Windows.Media.GradientStop(System.Windows.Media.Colors.Transparent, 1));
+
+            var accentLine = new Border
+            {
+                Height = 2,
+                CornerRadius = new CornerRadius(12, 12, 0, 0),
+                Background = accentBrush,
+            };
+
+            var iconBackground = new System.Windows.Media.LinearGradientBrush
+            {
+                StartPoint = new System.Windows.Point(0, 0),
+                EndPoint = new System.Windows.Point(1, 1),
+            };
+            iconBackground.GradientStops.Add(new System.Windows.Media.GradientStop(hex("#F43F5E"), 0));
+            iconBackground.GradientStops.Add(new System.Windows.Media.GradientStop(hex("#BE185D"), 1));
+
+            var titleIcon = new Border
+            {
+                Width = 28,
+                Height = 28,
+                CornerRadius = new CornerRadius(8),
+                Background = iconBackground,
+                Child = new TextBlock
+                {
+                    Text = "!",
+                    FontSize = 16,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = System.Windows.Media.Brushes.White,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center,
+                },
+            };
+
+            var titleText = new TextBlock
+            {
+                Text = "DELETE PRESET",
+                FontSize = 10,
+                FontWeight = FontWeights.Bold,
+                Foreground = new System.Windows.Media.SolidColorBrush(hex("#7B9EC8")),
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(10, 0, 0, 0),
+            };
+
+            var closeButton = new Button
+            {
+                Content = "X",
+                Width = 30,
+                Height = 30,
+                Padding = new Thickness(0),
+                Style = TryFindResource("GhostButtonStyle") as Style,
+                Foreground = new System.Windows.Media.SolidColorBrush(hex("#7B9EC8")),
+                Command = DialogHost.CloseDialogCommand,
+                CommandParameter = false,
+            };
+
+            var titleContent = new Grid { Margin = new Thickness(16, 12, 12, 12) };
+            titleContent.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            titleContent.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            titleContent.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            Grid.SetColumn(titleIcon, 0);
+            Grid.SetColumn(titleText, 1);
+            Grid.SetColumn(closeButton, 2);
+            titleContent.Children.Add(titleIcon);
+            titleContent.Children.Add(titleText);
+            titleContent.Children.Add(closeButton);
+
+            var headerGrid = new Grid();
+            headerGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(2) });
+            headerGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            Grid.SetRow(accentLine, 0);
+            Grid.SetRow(titleContent, 1);
+            headerGrid.Children.Add(accentLine);
+            headerGrid.Children.Add(titleContent);
+
+            var header = new Border
+            {
+                CornerRadius = new CornerRadius(12, 12, 0, 0),
+                Background = new System.Windows.Media.SolidColorBrush(hex("#0A1020")),
+                Child = headerGrid,
+            };
+
+            var heading = new TextBlock
+            {
+                Text = "Delete saved preset?",
+                FontSize = 18,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = new System.Windows.Media.SolidColorBrush(hex("#EEF4FF")),
+                Margin = new Thickness(0, 0, 0, 8),
+            };
+
+            var bodyText = new TextBlock
+            {
+                Text = "This removes the styling preset from your saved list. Your current QR design will not change.",
+                FontSize = 12,
+                LineHeight = 18,
+                TextWrapping = TextWrapping.Wrap,
+                Foreground = new System.Windows.Media.SolidColorBrush(hex("#7B9EC8")),
+                Margin = new Thickness(0, 0, 0, 14),
+            };
+
+            var presetChip = new Border
+            {
+                CornerRadius = new CornerRadius(9),
+                Padding = new Thickness(12, 8, 12, 8),
+                Background = new System.Windows.Media.SolidColorBrush(hex("#081828")),
+                BorderBrush = new System.Windows.Media.SolidColorBrush(hex("#1A2D4A")),
+                BorderThickness = new Thickness(1),
+                Child = new TextBlock
+                {
+                    Text = presetName,
+                    FontSize = 13,
+                    FontWeight = FontWeights.SemiBold,
+                    Foreground = new System.Windows.Media.SolidColorBrush(hex("#B8D8FF")),
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                },
+            };
+
+            var cancelButton = new Button
+            {
+                Content = "Cancel",
+                Width = 102,
+                Height = 38,
+                Style = TryFindResource("GhostButtonStyle") as Style,
+                IsDefault = true,
+                Command = DialogHost.CloseDialogCommand,
+                CommandParameter = false,
+            };
+
+            var deleteButton = new Button
+            {
+                Content = "Delete",
+                Width = 112,
+                Height = 38,
+                Style = TryFindResource("DangerButtonStyle") as Style,
+                Margin = new Thickness(10, 0, 0, 0),
+                Command = DialogHost.CloseDialogCommand,
+                CommandParameter = true,
+            };
+
+            var buttons = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Margin = new Thickness(0, 18, 0, 0),
+            };
+            buttons.Children.Add(cancelButton);
+            buttons.Children.Add(deleteButton);
+
+            var contentPanel = new StackPanel { Margin = new Thickness(18, 16, 18, 18) };
+            contentPanel.Children.Add(heading);
+            contentPanel.Children.Add(bodyText);
+            contentPanel.Children.Add(presetChip);
+            contentPanel.Children.Add(buttons);
+
+            var divider = new Border
+            {
+                Height = 1,
+                Background = new System.Windows.Media.SolidColorBrush(hex("#1A2D4A")),
+            };
+
+            var mainGrid = new Grid();
+            mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            mainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1) });
+            mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            Grid.SetRow(header, 0);
+            Grid.SetRow(divider, 1);
+            Grid.SetRow(contentPanel, 2);
+            mainGrid.Children.Add(header);
+            mainGrid.Children.Add(divider);
+            mainGrid.Children.Add(contentPanel);
+
+            var dialogContent = new Border
+            {
+                Width = 390,
+                Background = new System.Windows.Media.SolidColorBrush(hex("#0F1520")),
+                CornerRadius = new CornerRadius(12),
+                BorderBrush = new System.Windows.Media.SolidColorBrush(hex("#1E3050")),
+                BorderThickness = new Thickness(1),
+                Effect = new System.Windows.Media.Effects.DropShadowEffect
+                {
+                    Color = hex("#0A84FF"),
+                    BlurRadius = 36,
+                    ShadowDepth = 0,
+                    Opacity = 0.22,
+                },
+                Child = mainGrid,
+            };
+
+            object? result = await DialogHost.Show(dialogContent, "RootDialog");
+            return result is bool confirmed && confirmed;
+        }
+
+        private bool ConfirmPresetDelete(string presetName)
+        {
+            System.Windows.Media.Color hex(string h) =>
+                (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(h)!;
+
+            var titleBarAccent = new System.Windows.Media.LinearGradientBrush
+            {
+                StartPoint = new System.Windows.Point(0, 0.5),
+                EndPoint = new System.Windows.Point(1, 0.5),
+            };
+            titleBarAccent.GradientStops.Add(new System.Windows.Media.GradientStop(System.Windows.Media.Colors.Transparent, 0));
+            titleBarAccent.GradientStops.Add(new System.Windows.Media.GradientStop(hex("#F43F5E"), 0.28));
+            titleBarAccent.GradientStops.Add(new System.Windows.Media.GradientStop(hex("#0A84FF"), 0.72));
+            titleBarAccent.GradientStops.Add(new System.Windows.Media.GradientStop(System.Windows.Media.Colors.Transparent, 1));
+
+            var accentLine = new Border
+            {
+                Height = 2,
+                CornerRadius = new CornerRadius(12, 12, 0, 0),
+                Background = titleBarAccent,
+                Effect = new System.Windows.Media.Effects.DropShadowEffect
+                {
+                    Color = hex("#F43F5E"),
+                    BlurRadius = 12,
+                    ShadowDepth = 0,
+                    Opacity = 0.45,
+                },
+            };
+
+            var iconBackground = new System.Windows.Media.LinearGradientBrush
+            {
+                StartPoint = new System.Windows.Point(0, 0),
+                EndPoint = new System.Windows.Point(1, 1),
+            };
+            iconBackground.GradientStops.Add(new System.Windows.Media.GradientStop(hex("#F43F5E"), 0));
+            iconBackground.GradientStops.Add(new System.Windows.Media.GradientStop(hex("#BE185D"), 1));
+
+            var titleIcon = new Border
+            {
+                Width = 28,
+                Height = 28,
+                CornerRadius = new CornerRadius(8),
+                Background = iconBackground,
+                Child = new TextBlock
+                {
+                    Text = "!",
+                    FontSize = 16,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = System.Windows.Media.Brushes.White,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center,
+                },
+            };
+
+            var titleText = new TextBlock
+            {
+                Text = "DELETE PRESET",
+                FontSize = 10,
+                FontWeight = FontWeights.Bold,
+                Foreground = new System.Windows.Media.SolidColorBrush(hex("#7B9EC8")),
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(10, 0, 0, 0),
+            };
+
+            var closeButton = new Button
+            {
+                Content = "X",
+                Width = 30,
+                Height = 30,
+                Padding = new Thickness(0),
+                Style = TryFindResource("GhostButtonStyle") as Style,
+                Foreground = new System.Windows.Media.SolidColorBrush(hex("#7B9EC8")),
+                HorizontalAlignment = HorizontalAlignment.Right,
+            };
+
+            var titleContent = new Grid { Margin = new Thickness(16, 12, 12, 12) };
+            titleContent.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            titleContent.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            titleContent.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            Grid.SetColumn(titleIcon, 0);
+            Grid.SetColumn(titleText, 1);
+            Grid.SetColumn(closeButton, 2);
+            titleContent.Children.Add(titleIcon);
+            titleContent.Children.Add(titleText);
+            titleContent.Children.Add(closeButton);
+
+            var titleGrid = new Grid();
+            titleGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(2) });
+            titleGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            Grid.SetRow(accentLine, 0);
+            Grid.SetRow(titleContent, 1);
+            titleGrid.Children.Add(accentLine);
+            titleGrid.Children.Add(titleContent);
+
+            var titleBar = new Border
+            {
+                CornerRadius = new CornerRadius(12, 12, 0, 0),
+                Background = new System.Windows.Media.SolidColorBrush(hex("#0A1020")),
+                Cursor = Cursors.SizeAll,
+                Child = titleGrid,
+            };
+
+            var heading = new TextBlock
+            {
+                Text = "Delete saved preset?",
+                FontSize = 18,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = new System.Windows.Media.SolidColorBrush(hex("#EEF4FF")),
+                Margin = new Thickness(0, 0, 0, 8),
+            };
+
+            var bodyText = new TextBlock
+            {
+                Text = "This removes the styling preset from your saved list. Your current QR design will not change.",
+                FontSize = 12,
+                LineHeight = 18,
+                TextWrapping = TextWrapping.Wrap,
+                Foreground = new System.Windows.Media.SolidColorBrush(hex("#7B9EC8")),
+                Margin = new Thickness(0, 0, 0, 14),
+            };
+
+            var presetChip = new Border
+            {
+                CornerRadius = new CornerRadius(9),
+                Padding = new Thickness(12, 8, 12, 8),
+                Background = new System.Windows.Media.SolidColorBrush(hex("#081828")),
+                BorderBrush = new System.Windows.Media.SolidColorBrush(hex("#1A2D4A")),
+                BorderThickness = new Thickness(1),
+                Child = new TextBlock
+                {
+                    Text = presetName,
+                    FontSize = 13,
+                    FontWeight = FontWeights.SemiBold,
+                    Foreground = new System.Windows.Media.SolidColorBrush(hex("#B8D8FF")),
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                },
+            };
+
+            var cancelButton = new Button
+            {
+                Content = "Cancel",
+                Width = 102,
+                Height = 38,
+                Style = TryFindResource("GhostButtonStyle") as Style,
+                IsDefault = true,
+                IsCancel = true,
+            };
+
+            var deleteButton = new Button
+            {
+                Content = "Delete",
+                Width = 112,
+                Height = 38,
+                Style = TryFindResource("DangerButtonStyle") as Style,
+                Margin = new Thickness(10, 0, 0, 0),
+            };
+
+            var buttons = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Margin = new Thickness(0, 18, 0, 0),
+            };
+            buttons.Children.Add(cancelButton);
+            buttons.Children.Add(deleteButton);
+
+            var contentPanel = new StackPanel { Margin = new Thickness(18, 16, 18, 18) };
+            contentPanel.Children.Add(heading);
+            contentPanel.Children.Add(bodyText);
+            contentPanel.Children.Add(presetChip);
+            contentPanel.Children.Add(buttons);
+
+            var divider = new Border
+            {
+                Height = 1,
+                Background = new System.Windows.Media.SolidColorBrush(hex("#1A2D4A")),
+            };
+
+            var mainGrid = new Grid();
+            mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            mainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1) });
+            mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            Grid.SetRow(titleBar, 0);
+            Grid.SetRow(divider, 1);
+            Grid.SetRow(contentPanel, 2);
+            mainGrid.Children.Add(titleBar);
+            mainGrid.Children.Add(divider);
+            mainGrid.Children.Add(contentPanel);
+
+            var outerBorder = new Border
+            {
+                Width = 390,
+                Background = new System.Windows.Media.SolidColorBrush(hex("#0F1520")),
+                CornerRadius = new CornerRadius(12),
+                BorderBrush = new System.Windows.Media.SolidColorBrush(hex("#1E3050")),
+                BorderThickness = new Thickness(1),
+                Effect = new System.Windows.Media.Effects.DropShadowEffect
+                {
+                    Color = hex("#0A84FF"),
+                    BlurRadius = 36,
+                    ShadowDepth = 0,
+                    Opacity = 0.22,
+                },
+                Child = mainGrid,
+            };
+
+            var dialog = new Window
+            {
+                Content = outerBorder,
+                WindowStyle = WindowStyle.None,
+                AllowsTransparency = true,
+                Background = System.Windows.Media.Brushes.Transparent,
+                SizeToContent = SizeToContent.WidthAndHeight,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                ResizeMode = ResizeMode.NoResize,
+                ShowInTaskbar = false,
+                Owner = this,
+            };
+
+            titleBar.MouseLeftButtonDown += (_, e) =>
+            {
+                if (e.LeftButton == MouseButtonState.Pressed)
+                    dialog.DragMove();
+            };
+
+            bool confirmed = false;
+            closeButton.Click += (_, _) => dialog.DialogResult = false;
+            cancelButton.Click += (_, _) => dialog.DialogResult = false;
+            deleteButton.Click += (_, _) =>
+            {
+                confirmed = true;
+                dialog.DialogResult = true;
+            };
+
+            dialog.Loaded += (_, _) => cancelButton.Focus();
+
+            dialog.ShowDialog();
+            return confirmed;
         }
 
         private string? PromptForPresetName(string? defaultName)
